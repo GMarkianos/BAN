@@ -1,28 +1,32 @@
-from bluepy.btle import Peripheral, Characteristic, Service, UUID, BTLEException
+from bluepy.btle import Peripheral, DefaultDelegate, UUID
 
 class SensorPeripheral(Peripheral):
     def __init__(self):
-        Peripheral.__init__(self)
-        self.svc = self.addService(Service(UUID(0x180D)))
-        self.chr = self.svc.addCharacteristic(UUID(0x2A37), Characteristic.PROPERTY_READ | Characteristic.PROPERTY_NOTIFY, Characteristic.PERMISSION_READ)
-        self.setCallbacks()
-
-    def setCallbacks(self):
-        self.chr.setCallbacks(CharacteristicCallbacks())
+        Peripheral.__init__(self, "hci0")  # Specify the Bluetooth interface
+        self.setDelegate(NotificationDelegate())
         
-class CharacteristicCallbacks(Characteristic.Characteristic):
-    def onReadRequest(self, handle, offset):
-        return self.getSensorData()
+    def advertise(self, name):
+        # This is a placeholder method for advertising
+        print(f"Advertising as {name}")
+        
+class NotificationDelegate(DefaultDelegate):
+    def __init__(self):
+        DefaultDelegate.__init__(self)
+        
+    def handleNotification(self, cHandle, data):
+        print("Notification received:", data)
 
     def getSensorData(self):
         # Replace this with your sensor data retrieval logic
-        return "Sensor Data"
+        return b"Sensor Data"
 
 if __name__ == "__main__":
     sensor = SensorPeripheral()
     try:
         sensor.advertise("Sensor")
         while True:
-            pass
+            if sensor.waitForNotifications(1.0):
+                # Handle waiting for notifications
+                pass
     except KeyboardInterrupt:
         sensor.disconnect()

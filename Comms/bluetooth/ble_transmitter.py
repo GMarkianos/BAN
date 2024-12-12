@@ -2,7 +2,7 @@ from bluepy.btle import Peripheral, DefaultDelegate, UUID
 
 class SensorPeripheral(Peripheral):
     def __init__(self):
-        Peripheral.__init__(self, "hci0")  # Specify the Bluetooth interface
+        Peripheral.__init__(self)  # Specify the Bluetooth interface
         self.setDelegate(NotificationDelegate())
         
     def advertise(self, name):
@@ -18,7 +18,7 @@ class NotificationDelegate(DefaultDelegate):
 
     def getSensorData(self):
         # Replace this with your sensor data retrieval logic
-        return b"Sensor Data"
+        return b"10"
 
 if __name__ == "__main__":
     sensor = SensorPeripheral()

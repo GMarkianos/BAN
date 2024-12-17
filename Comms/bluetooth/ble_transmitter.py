@@ -27,39 +27,43 @@ class MyDelegate(btle.DefaultDelegate):
 
     def handleNotification(self, cHandle, data):
     	data = bytearray(data)
-    	print 'Developer: do what you want with the data.'
-    	print data
+    	#print 'Developer: do what you want with the data.'
+    	print(data)
 
 
 
-print "Connecting..."
-dev = btle.Peripheral(BLE_ADDRESS)
-dev.setDelegate( MyDelegate() )
- 
-service_uuid = btle.UUID(BLE_SERVICE_UUID)
-ble_service = dev.getServiceByUUID(service_uuid)
+print("Connecting...")
+try:
+    dev = btle.Peripheral(BLE_ADDRESS)
+    dev.setDelegate( MyDelegate() )
+     
+    service_uuid = btle.UUID(BLE_SERVICE_UUID)
+    ble_service = dev.getServiceByUUID(service_uuid)
 
-uuidConfig = btle.UUID(BLE_CHARACTERISTIC_UUID)
-data_chrc = ble_service.getCharacteristics(uuidConfig)[0]
+    uuidConfig = btle.UUID(BLE_CHARACTERISTIC_UUID)
+    data_chrc = ble_service.getCharacteristics(uuidConfig)[0]
 
-# print "Debug Services..."
-# for svc in dev.services:
-# 	print str(svc)
+    # print "Debug Services..."
+    # for svc in dev.services:
+    # 	print str(svc)
 
-# print 'Debug Characteristics...'
-# for ch in es_service.getCharacteristics():
-# 	print str(ch)
+    # print 'Debug Characteristics...'
+    # for ch in es_service.getCharacteristics():
+    # 	print str(ch)
 
-# Enable the sensor, start notifications
-# Writing x01 is the protocol for all BLE notifications.
-data_chrc.write(bytes("\x01")) 
+    # Enable the sensor, start notifications
+    # Writing x01 is the protocol for all BLE notifications.
+    data_chrc.write(bytes("\x01")) 
 
-time.sleep(1.0) # Allow sensor to stabilise
+    time.sleep(1.0) # Allow sensor to stabilise
 
 
-# Main loop --------
-while True:
-    if dev.waitForNotifications(1.0):
-        # handleNotification() was called
-        continue
-    print "Waiting..."
+    # Main loop --------
+    while True:
+        if dev.waitForNotifications(1.0):
+            # handleNotification() was called
+            continue
+        print("Waiting...")
+
+except Exception as e:
+    print(f"error: {e}")

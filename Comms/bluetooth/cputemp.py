@@ -63,25 +63,27 @@ class TempCharacteristic(Characteristic):
                 ["notify", "read"], service)
         self.add_descriptor(TempDescriptor(self))
 
-    def get_temperature(self):
+    def get_int(self):
         value = []
-        unit = "C"
+        num = 60
 
-        cpu = CPUTemperature()
-        temp = cpu.temperature
-        if self.service.is_farenheit():
-            temp = (temp * 1.8) + 32
-            unit = "F"
+        #cpu = CPUTemperature()
+        #temp = cpu.temperature
+        #if self.service.is_farenheit():
+         #   temp = (temp * 1.8) + 32
+          #  unit = "F"
 
-        strtemp = str(round(temp, 1)) + " " + unit
-        for c in strtemp:
-            value.append(dbus.Byte(c.encode()))
+        #strtemp = str(round(temp, 1)) + " " + unit
+        #for c in strtemp:
+         #   value.append(dbus.Byte(c.encode()))
+
+        value = [dbus.Byte(b) for b in num.to_bytes(4, byteorder="little")]
 
         return value
 
-    def set_temperature_callback(self):
+    def set_int_callback(self):
         if self.notifying:
-            value = self.get_temperature()
+            value = self.get_int()
             self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
 
         return self.notifying
@@ -92,15 +94,15 @@ class TempCharacteristic(Characteristic):
 
         self.notifying = True
 
-        value = self.get_temperature()
+        value = self.get_int()
         self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-        self.add_timeout(NOTIFY_TIMEOUT, self.set_temperature_callback)
+        self.add_timeout(NOTIFY_TIMEOUT, self.set_int_callback)
 
     def StopNotify(self):
         self.notifying = False
 
     def ReadValue(self, options):
-        value = self.get_temperature()
+        value = self.get_int()
 
         return value
 

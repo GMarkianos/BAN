@@ -1,5 +1,4 @@
 import dbus
-from PyQt6.QtNetwork.QHttpHeaders import value
 
 from advertisement import Advertisement
 from service import Application, Service, Characteristic, Descriptor
@@ -19,7 +18,7 @@ class SensorService(Service):
     def __init__(self, index):
         Service.__init__(self,index, self.SENSOR_SVC_UUID, True)
         self.add_characteristic(HRCharacteristic(self))
-        self.add_characteristic(O2Characterristic(self))
+        self.add_characteristic(O2Characteristic(self))
 
 class HRCharacteristic(Characteristic):
     HR_CHARACTERISTIC_UUID = "c1850dfb-ecee-4081-ad61-2442c5f5c341"
@@ -30,7 +29,7 @@ class HRCharacteristic(Characteristic):
         Characteristic.__init__(
             self, self.HR_CHARACTERISTIC_UUID,
             ["notify", "read"], service)
-            self.add_descriptor(HRDescriptor(self))
+        self.add_descriptor(HRDescriptor(self))
 
     def get_heartrate(self):
         value = []
@@ -99,44 +98,44 @@ class O2Characteristic(Characteristic):
         self.add_descriptor(O2Descriptor(self))
 
 
-def get_oxygen(self):
-    value = []
-    metric = "%"
-    oxygen = 99
+    def get_oxygen(self):
+        value = []
+        metric = "%"
+        oxygen = 99
 
-    stro2 = str(oxygen) + metric
-    for c in stro2:
-        value.append(dbus.Byte(c.encode()))
+        stro2 = str(oxygen) + metric
+        for c in stro2:
+            value.append(dbus.Byte(c.encode()))
 
-    return value
+        return value
 
 
-def set_oxygen_callback(self):
-    if self.notifying:
+    def set_oxygen_callback(self):
+        if self.notifying:
+            value = self.get_oxygen()
+            self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
+
+        return self.notifying
+
+
+    def StartNotify(self):
+        if self.notifying:
+            return
+        self.notifying = True
+
         value = self.get_oxygen()
         self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-
-    return self.notifying
-
-
-def StartNotify(self):
-    if self.notifying:
-        return
-    self.notifying = True
-
-    value = self.get_oxygen()
-    self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-    self.add_timeout(NOTIFY_TIMEOUT, self.set_oxygen_callback)
+        self.add_timeout(NOTIFY_TIMEOUT, self.set_oxygen_callback)
 
 
-def StopNotify(self):
-    self.notifying = False
+    def StopNotify(self):
+        self.notifying = False
 
 
-def ReadValue(self, options):
-    value = self.get_oxygen()
+    def ReadValue(self, options):
+        value = self.get_oxygen()
 
-    return value
+        return value
 
 
 class O2Descriptor(Descriptor):

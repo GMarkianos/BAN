@@ -16,7 +16,6 @@ import smbus
 import os
 import math
 import RPi.GPIO as GPIO
-import math
 from DFRobot_RTU import *
 
 I2C_MODE                  = 0x01

@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-# ble_runner.py - Runs with system Python
-
 import sys
-import json
 import time
-from ble_sensor_lib import BLESensorManager
+import json
+import os
+from gobject_ble_lib import BLEManager
 
 
 def main():
-    ble_manager = BLESensorManager("HealthSensor")
+    print("=== BLE Health Monitor ===")
 
-    if not ble_manager.start_advertising():
-        print("Failed to start BLE")
+    ble = BLEManager("BAN-HealthSensor")
+
+    if not ble.start_advertising():
+        print("Failed to start BLE advertising")
         return 1
 
-    print("BLE advertising started. Waiting for sensor data...")
+    print("BLE advertising active")
+    print("Look for 'BAN-HealthSensor' in nRF Connect")
+    print("Press Ctrl+C to stop")
 
     try:
         while True:
@@ -23,20 +26,30 @@ def main():
                 with open('/tmp/sensor_data.json', 'r') as f:
                     sensor_data = json.load(f)
 
-                # Update BLE characteristics
-                ble_manager.set_heart_rate(sensor_data['heart_rate'])
-                ble_manager.set_oxygen_level(sensor_data['oxygen_level'])
-                print(f"BLE: HR {sensor_data['heart_rate']}, O2 {sensor_data['oxygen_level']}")
+                hr = sensor_data.get('heart_rate', -1)
+                o2 = sensor_data.get('oxygen_level', -1)
+
+                # Update BLE with valid sensor data
+                if hr != -1 and o2 != -1:
+                    ble.set_heart_rate(hr)
+                    ble.set_oxygen_level(o2)
+                    print(f"📊 BLE Updated - HR: {hr}bpm, O2: {o2}%")
+                else:
+                    print("⏳ Waiting for valid sensor data...")
 
             except FileNotFoundError:
-                pass  # No data yet
+                print("⏳ Waiting for sensor data file...")
+            except json.JSONDecodeError:
+                print("⚠ Corrupted sensor data file")
+            except Exception as e:
+                print(f"📖 Data read error: {e}")
 
-            time.sleep(2)
+            time.sleep(3)
 
     except KeyboardInterrupt:
-        print("\nStopping BLE...")
+        print("\n🛑 Stopping BLE...")
     finally:
-        ble_manager.stop()
+        ble.stop()
 
     return 0
 

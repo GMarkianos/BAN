@@ -19,7 +19,7 @@ class HeartRateMonitor:
         if self.sensor.begin():
             self.sensor.sensor_start_collect()
             self.initialized = True
-            print("Sensor started successfully")
+            print("✓ Sensor started successfully")
 
             # Start BLE as separate process
             self.start_ble()
@@ -29,22 +29,22 @@ class HeartRateMonitor:
             signal.signal(signal.SIGINT, self.signal_handler)
             signal.signal(signal.SIGTERM, self.signal_handler)
         else:
-            print("Sensor initialization failed!")
+            print("✗ Sensor initialization failed!")
 
     def start_ble(self):
         """Start BLE as separate system process"""
         try:
-            # Run BLE runner with system Python (not virtual environment)
             ble_script = os.path.join(os.path.dirname(__file__), 'Comms', 'bluetooth', 'ble_runner.py')
             self.ble_process = subprocess.Popen(
                 ['python3', ble_script],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                text=True
             )
-            print("BLE process started with system Python")
-            time.sleep(2)  # Give BLE time to start
+            print("✓ BLE process started with system Python")
+            time.sleep(3)  # Give BLE time to initialize
         except Exception as e:
-            print(f"Failed to start BLE: {e}")
+            print(f"✗ Failed to start BLE: {e}")
 
     def write_sensor_data(self, readings):
         """Write sensor data to shared file for BLE process"""
@@ -57,17 +57,24 @@ class HeartRateMonitor:
             with open('/tmp/sensor_data.json', 'w') as f:
                 json.dump(data, f)
         except Exception as e:
-            print(f"Error writing sensor data: {e}")
+            print(f"✗ Error writing sensor data: {e}")
 
     def cleanup(self):
         """Properly shutdown everything"""
+        print("🛑 Cleaning up...")
+
+        # Stop BLE process
         if self.ble_process:
             print("Stopping BLE process...")
             self.ble_process.terminate()
-            self.ble_process.wait()
+            try:
+                self.ble_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.ble_process.kill()
 
+        # Stop sensor
         if self.initialized:
-            print("Shutting down sensor...")
+            print("Stopping sensor...")
             self.sensor.sensor_end_collect()
             time.sleep(0.5)
             self.initialized = False
@@ -78,9 +85,11 @@ class HeartRateMonitor:
         except:
             pass
 
+        print("✓ Cleanup complete")
+
     def signal_handler(self, sig, frame):
         """Handle Ctrl+C and other termination signals"""
-        print("\nReceived shutdown signal...")
+        print("\n🛑 Received shutdown signal...")
         self.cleanup()
         sys.exit(0)
 
@@ -95,42 +104,47 @@ class HeartRateMonitor:
         }
 
     def __del__(self):
-        """Destructor - called when object is destroyed"""
+        """Destructor"""
         self.cleanup()
 
 
-# Usage in your main program
+# Main program
 if __name__ == "__main__":
     monitor = HeartRateMonitor()
 
     try:
-        while True:
-            if not firebase_admin._apps:
-                firebase_admin.initialize_app(cred, {
-                    "databaseURL": "https://ban-net-default-rtdb.europe-west1.firebasedatabase.app/"
-                })
+        # Initialize Firebase
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred, {
+                "databaseURL": "https://ban-net-default-rtdb.europe-west1.firebasedatabase.app/"
+            })
 
+        print("🚀 Health Monitor Running...")
+        print("Press Ctrl+C to stop")
+
+        while True:
             readings = monitor.get_readings()
+
             if readings:
                 # Write data for BLE process
                 monitor.write_sensor_data(readings)
 
-                print(f"Heart Rate: {readings['heart_rate']} bpm")
-                print(f"SpO2: {readings['spo2']}%")
-                print("-" * 20)
-            print(f"BLE process PID: {monitor.ble_process.pid}")
-            print(f"BLE process returncode: {monitor.ble_process.poll()}")
+                # Display current readings
+                hr = readings['heart_rate']
+                o2 = readings['spo2']
 
-            # Check if process is still alive
-            if monitor.ble_process.poll() is not None:
-                print("BLE process died! Exit code:", monitor.ble_process.returncode)
-                # Check stderr for errors
-                stderr_output = monitor.ble_process.stderr.read()
-                if stderr_output:
-                    print("BLE stderr:", stderr_output.decode())
-            time.sleep(2)  # Read every 2 seconds
+                if hr != -1 and o2 != -1:
+                    print(f"❤️  Heart Rate: {hr:3d} bpm")
+                    print(f"💨 SpO2: {o2:2d}%")
+                    print("-" * 25)
+                else:
+                    print("⏳ Waiting for valid sensor readings...")
 
+            time.sleep(2)
+
+    except KeyboardInterrupt:
+        print("\n🛑 Stopping health monitor...")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"💥 Unexpected error: {e}")
     finally:
         monitor.cleanup()

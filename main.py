@@ -51,7 +51,7 @@ class HeartRateMonitor:
             self.ble_app = Application()
 
             # Create sensor service
-            from Comms.bluetooth.sensor import SensorService
+            from Comms.bluetooth.sensor import SensorService, SensorAdvertisement
             sensor_service = SensorService(0)
 
             # Store references to characteristics BEFORE adding to app
@@ -71,6 +71,12 @@ class HeartRateMonitor:
 
             # Register BLE application
             self.ble_app.register()
+            print("✓ GATT application registered")
+
+            # CREATE AND REGISTER ADVERTISEMENT (This was missing!)
+            self.ble_advertisement = SensorAdvertisement(0)
+            self.ble_advertisement.register()
+            print("✓ BLE advertisement registered")
 
             # Start BLE in background thread
             self.ble_running = True
@@ -78,6 +84,7 @@ class HeartRateMonitor:
             self.ble_thread.start()
 
             print("✓ BLE service started successfully")
+            print("📱 Device should now appear as 'HealthSensor' in nRF Connect")
             time.sleep(3)  # Give BLE more time to initialize
 
         except Exception as e:
@@ -136,6 +143,11 @@ class HeartRateMonitor:
             print("Stopping BLE service...")
             self.ble_app.quit()
             self.ble_running = False
+
+        # Stop BLE advertisement
+        if hasattr(self, 'ble_advertisement'):
+            print("Stopping BLE advertisement...")
+            # You might need to add a stop method to Advertisement class
 
         # Stop sensor
         if self.initialized:

@@ -12,6 +12,7 @@ class SensorAdvertisement(Advertisement):
         Advertisement.__init__(self, index, "peripheral")
         self.add_local_name("HealthSensor")
         self.include_tx_power = True
+        print("✓ SensorAdvertisement created")
 
 
 class SensorService(Service):

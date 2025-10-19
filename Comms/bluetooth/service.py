@@ -2,10 +2,27 @@
 import dbus
 import dbus.mainloop.glib
 import dbus.exceptions
+import sys
+import os
+
+# Use system Python for gi import
+sys.path = ['/usr/lib/python3/dist-packages'] + sys.path
 try:
-  from gi.repository import GObject
+    from gi.repository import GObject
 except ImportError:
-    import gobject as GObject
+    # Fallback for different distributions
+    try:
+        import gi
+        gi.require_version('GObject', '2.0')
+        from gi.repository import GObject
+    except ImportError:
+        # Final fallback
+        try:
+            import gobject as GObject
+        except ImportError:
+            print("ERROR: GObject not available. BLE will not work.")
+            print("Try running with: python3 main.py")
+            sys.exit(1)
 from bletools import BleTools
 
 BLUEZ_SERVICE_NAME = "org.bluez"

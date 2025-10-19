@@ -23,7 +23,7 @@ except ImportError:
             print("ERROR: GObject not available. BLE will not work.")
             print("Try running with: python3 main.py")
             sys.exit(1)
-from bletools import BleTools
+from Comms.bluetooth.bletools import BleTools
 
 BLUEZ_SERVICE_NAME = "org.bluez"
 GATT_MANAGER_IFACE = "org.bluez.GattManager1"

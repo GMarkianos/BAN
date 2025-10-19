@@ -118,7 +118,16 @@ if __name__ == "__main__":
                 print(f"Heart Rate: {readings['heart_rate']} bpm")
                 print(f"SpO2: {readings['spo2']}%")
                 print("-" * 20)
+            print(f"BLE process PID: {monitor.ble_process.pid}")
+            print(f"BLE process returncode: {monitor.ble_process.poll()}")
 
+            # Check if process is still alive
+            if monitor.ble_process.poll() is not None:
+                print("BLE process died! Exit code:", monitor.ble_process.returncode)
+                # Check stderr for errors
+                stderr_output = monitor.ble_process.stderr.read()
+                if stderr_output:
+                    print("BLE stderr:", stderr_output.decode())
             time.sleep(2)  # Read every 2 seconds
 
     except Exception as e:

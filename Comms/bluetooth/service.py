@@ -1,12 +1,21 @@
 
-import dbus
-import dbus.mainloop.glib
-import dbus.exceptions
 import sys
 import os
 
-# Use system Python for gi import
+# Use system Python for dbus import
 sys.path = ['/usr/lib/python3/dist-packages'] + sys.path
+
+try:
+    import dbus
+    import dbus.mainloop.glib
+    import dbus.service  # This is crucial!
+    import dbus.exceptions
+except ImportError as e:
+    print(f"ERROR: D-Bus imports failed: {e}")
+    print("Make sure python3-dbus is installed system-wide")
+    sys.exit(1)
+
+# Use system Python for gi import
 try:
     from gi.repository import GObject
 except ImportError:
@@ -23,6 +32,7 @@ except ImportError:
             print("ERROR: GObject not available. BLE will not work.")
             print("Try running with: python3 main.py")
             sys.exit(1)
+
 from Comms.bluetooth.bletools import BleTools
 
 BLUEZ_SERVICE_NAME = "org.bluez"

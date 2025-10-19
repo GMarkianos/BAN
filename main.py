@@ -198,7 +198,9 @@ class HeartRateMonitor:
 # Main program
 if __name__ == "__main__":
     monitor = HeartRateMonitor()
-    print(f"🔍 1stSensor Status: {self.check_sensor_status()}")
+
+    # Check sensor status after initialization
+    print(f"🔍 Sensor Status: {monitor.check_sensor_status()}")
 
     try:
         # Initialize Firebase
@@ -217,7 +219,6 @@ if __name__ == "__main__":
 
         while True:
             readings = monitor.get_readings()
-            print(f"🔍 Sensor Status: {self.check_sensor_status()}")
 
             if readings:
                 # Display raw readings for debugging

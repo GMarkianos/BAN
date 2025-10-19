@@ -13,13 +13,20 @@ class SensorAdvertisement(Advertisement):
         self.add_local_name("HealthSensor")
         self.include_tx_power = True
 
+
 class SensorService(Service):
     SENSOR_SVC_UUID = "31c8f278-7301-4dde-b3e3-ea763aa3fdb7"
 
     def __init__(self, index):
         Service.__init__(self, index, self.SENSOR_SVC_UUID, True)
-        self.add_characteristic(HRCharacteristic(self))
-        self.add_characteristic(O2Characteristic(self))
+
+        # Create characteristics and store references
+        self.hr_characteristic = HRCharacteristic(self)
+        self.o2_characteristic = O2Characteristic(self)
+
+        # Add to service
+        self.add_characteristic(self.hr_characteristic)
+        self.add_characteristic(self.o2_characteristic)
 
 class HRCharacteristic(Characteristic):
     HR_CHARACTERISTIC_UUID = "c1850dfb-ecee-4081-ad61-2442c5f5c341"

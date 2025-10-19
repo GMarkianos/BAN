@@ -45,30 +45,45 @@ class HeartRateMonitor:
     def start_ble_service(self):
         """Start BLE service integrated with main application"""
         try:
-            # Create and setup BLE application
-            self.ble_app = Application()
-            sensor_service = SensorService(0)
-            self.ble_app.add_service(sensor_service)
+            print("🔄 Initializing BLE service...")
 
-            # Get references to characteristics for updating values
+            # Create BLE application
+            self.ble_app = Application()
+
+            # Create sensor service
+            from Comms.bluetooth.sensor import SensorService
+            sensor_service = SensorService(0)
+
+            # Store references to characteristics BEFORE adding to app
+            self.ble_hr_characteristic = None
+            self.ble_o2_characteristic = None
+
             for characteristic in sensor_service.characteristics:
-                if isinstance(characteristic, HRCharacteristic):
+                if hasattr(characteristic, 'HR_CHARACTERISTIC_UUID'):
                     self.ble_hr_characteristic = characteristic
-                elif isinstance(characteristic, O2Characteristic):
+                    print("✓ Found HR characteristic")
+                elif hasattr(characteristic, 'O2_CHARACTERISTIC_UUID'):
                     self.ble_o2_characteristic = characteristic
+                    print("✓ Found O2 characteristic")
+
+            # Add service to application
+            self.ble_app.add_service(sensor_service)
 
             # Register BLE application
             self.ble_app.register()
 
-            # Start BLE in a separate thread to not block main loop
+            # Start BLE in background thread
             self.ble_running = True
             self.ble_thread = threading.Thread(target=self._run_ble, daemon=True)
             self.ble_thread.start()
 
             print("✓ BLE service started successfully")
-            time.sleep(2)  # Give BLE time to initialize
+            time.sleep(3)  # Give BLE more time to initialize
+
         except Exception as e:
             print(f"✗ Failed to start BLE service: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _run_ble(self):
         """Run BLE mainloop in separate thread"""
@@ -81,10 +96,19 @@ class HeartRateMonitor:
 
     def update_ble_data(self, heart_rate, oxygen_level):
         """Update BLE characteristics with new sensor data"""
-        if self.ble_hr_characteristic:
-            self.ble_hr_characteristic.set_heart_rate(heart_rate)
-        if self.ble_o2_characteristic:
-            self.ble_o2_characteristic.set_oxygen_level(oxygen_level)
+        try:
+            if self.ble_hr_characteristic:
+                success = self.ble_hr_characteristic.set_heart_rate(heart_rate)
+                if not success:
+                    print("⚠ Failed to update HR characteristic")
+
+            if self.ble_o2_characteristic:
+                success = self.ble_o2_characteristic.set_oxygen_level(oxygen_level)
+                if not success:
+                    print("⚠ Failed to update O2 characteristic")
+
+        except Exception as e:
+            print(f"⚠ BLE data update error: {e}")
 
     def write_sensor_data(self, readings):
         """Write sensor data to shared file and update BLE"""

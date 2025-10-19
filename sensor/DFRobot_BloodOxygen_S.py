@@ -12,11 +12,11 @@
 # this is the updated version
 import serial
 import time
-import smbus
+import smbus2
 import os
 import math
 import RPi.GPIO as GPIO
-from DFRobot_RTU import *
+from sensor.DFRobot_RTU import *
 
 I2C_MODE                  = 0x01
 UART_MODE                 = 0x02
@@ -37,7 +37,7 @@ class DFRobot_BloodOxygen_S(DFRobot_RTU):
     
   def __init__(self ,bus ,Baud):
     if bus != 0:
-      self.i2cbus = smbus.SMBus(bus)
+      self.i2cbus = smbus2.SMBus(bus)
       self.__uart_i2c = I2C_MODE
     
 

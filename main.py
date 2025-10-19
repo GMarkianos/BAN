@@ -168,6 +168,28 @@ class HeartRateMonitor:
             'spo2': self.sensor.SPO2
         }
 
+    def check_sensor_status(self):
+        """Check if sensor is properly initialized and reading data"""
+        if not self.initialized:
+            return "Sensor not initialized"
+
+        # Try to get a reading
+        readings = self.get_readings()
+        if readings:
+            hr = readings['heart_rate']
+            o2 = readings['spo2']
+
+            if hr == -1 and o2 == -1:
+                return "Sensor connected but not reading data (both values -1)"
+            elif hr == -1:
+                return "Sensor connected but HR reading invalid"
+            elif o2 == -1:
+                return "Sensor connected but O2 reading invalid"
+            else:
+                return f"Sensor working: HR={hr}, O2={o2}"
+        else:
+            return "No readings available"
+
     def __del__(self):
         """Destructor"""
         self.cleanup()
@@ -176,6 +198,7 @@ class HeartRateMonitor:
 # Main program
 if __name__ == "__main__":
     monitor = HeartRateMonitor()
+    print(f"🔍 1stSensor Status: {self.check_sensor_status()}")
 
     try:
         # Initialize Firebase
@@ -187,31 +210,50 @@ if __name__ == "__main__":
         print("🚀 Health Monitor Running...")
         print("Press Ctrl+C to stop")
         print("Look for 'HealthSensor' in nRF Connect")
+        print("-" * 50)
+
+        # Wait a bit for sensor to stabilize
+        time.sleep(2)
 
         while True:
             readings = monitor.get_readings()
+            print(f"🔍 Sensor Status: {self.check_sensor_status()}")
 
             if readings:
-                # Write data for BLE process and update BLE directly
-                monitor.write_sensor_data(readings)
-
-                # Display current readings
+                # Display raw readings for debugging
                 hr = readings['heart_rate']
                 o2 = readings['spo2']
 
+                print(f"📊 Raw Sensor - HR: {hr}, O2: {o2}")
+
                 if hr != -1 and o2 != -1:
+                    # Write data for BLE process and update BLE directly
+                    monitor.write_sensor_data(readings)
+
+                    # Update BLE characteristics
+                    monitor.update_ble_data(hr, o2)
+
                     print(f"❤️  Heart Rate: {hr:3d} bpm")
                     print(f"💨 SpO2: {o2:2d}%")
-                    print(f"📡 BLE: Active - HR: {hr}bpm, O2: {o2}%")
+                    print(f"📡 BLE: Updated successfully")
                     print("-" * 25)
                 else:
                     print("⏳ Waiting for valid sensor readings...")
+                    # Try to reset sensor if it keeps returning -1
+                    if monitor.initialized:
+                        print("🔄 Attempting to reset sensor...")
+                        monitor.sensor.sensor_end_collect()
+                        time.sleep(1)
+                        monitor.sensor.sensor_start_collect()
 
-            time.sleep(2)
+            time.sleep(3)  # Increased delay for sensor stability
 
     except KeyboardInterrupt:
         print("\n🛑 Stopping health monitor...")
     except Exception as e:
         print(f"💥 Unexpected error: {e}")
+        import traceback
+
+        traceback.print_exc()
     finally:
         monitor.cleanup()

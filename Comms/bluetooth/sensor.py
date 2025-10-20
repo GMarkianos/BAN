@@ -42,20 +42,20 @@ class HRCharacteristic(Characteristic):
         self.add_descriptor(HRDescriptor(self))
 
     def set_heart_rate(self, hr_value):
-        """Update heart rate value"""
+        """Update heart rate value - no validation"""
         self.heart_rate = hr_value
+        # Notify connected clients of the change
         if self.notifying:
             value = self.get_heartrate()
             self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         return True
 
     def get_heartrate(self):
-        """Return heart rate as 16-bit signed integer (2 bytes)"""
-        # Convert to signed 16-bit integer (handles -1 to 32767)
+        """Return heart rate as string bytes (simpler approach)"""
         value = []
-        hr_bytes = self.heart_rate.to_bytes(2, byteorder='little', signed=True)
-        for byte in hr_bytes:
-            value.append(dbus.Byte(byte))
+        hr_str = str(self.heart_rate)
+        for char in hr_str:
+            value.append(dbus.Byte(char.encode()))
         return value
 
     def set_heartrate_callback(self):
@@ -77,6 +77,7 @@ class HRCharacteristic(Characteristic):
         self.notifying = False
 
     def ReadValue(self, options):
+        """This is called when a client reads the characteristic"""
         return self.get_heartrate()
 
 class HRDescriptor(Descriptor):
@@ -109,19 +110,20 @@ class O2Characteristic(Characteristic):
         self.add_descriptor(O2Descriptor(self))
 
     def set_oxygen_level(self, o2_value):
-        """Update oxygen level value"""
+        """Update oxygen level value - no validation"""
         self.oxygen_level = o2_value
+        # Notify connected clients of the change
         if self.notifying:
             value = self.get_oxygen()
             self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         return True
 
     def get_oxygen(self):
-        """Return oxygen level as 8-bit signed integer (1 byte)"""
-        # Convert to signed 8-bit integer (handles -128 to 127)
+        """Return oxygen level as string bytes (simpler approach)"""
         value = []
-        # For values that fit in one byte, we can just append directly
-        value.append(dbus.Byte(self.oxygen_level))
+        o2_str = str(self.oxygen_level)
+        for char in o2_str:
+            value.append(dbus.Byte(char.encode()))
         return value
 
     def set_oxygen_callback(self):
@@ -144,6 +146,7 @@ class O2Characteristic(Characteristic):
 
 
     def ReadValue(self, options):
+        """This is called when a client reads the characteristic"""
         return self.get_oxygen()
 
 class O2Descriptor(Descriptor):

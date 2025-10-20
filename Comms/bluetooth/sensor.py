@@ -34,7 +34,7 @@ class HRCharacteristic(Characteristic):
 
     def __init__(self, service):
         self.notifying = False
-        self.heart_rate = 0  # Start with 0 instead of default
+        self.heart_rate = 0
 
         Characteristic.__init__(
             self, self.HR_CHARACTERISTIC_UUID,
@@ -44,18 +44,18 @@ class HRCharacteristic(Characteristic):
     def set_heart_rate(self, hr_value):
         """Update heart rate value - no validation"""
         self.heart_rate = hr_value
-        # Force a properties changed signal to update clients
-        value = self.get_heartrate()
-        self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
+        # Notify connected clients of the change
+        if self.notifying:
+            value = self.get_heartrate()
+            self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         return True
 
     def get_heartrate(self):
-        """Return heart rate in proper BLE characteristic format"""
+        """Return heart rate as string bytes (simpler approach)"""
         value = []
-        # Convert integer to bytes (little-endian)
-        hr_bytes = self.heart_rate.to_bytes(2, byteorder='little', signed=True)
-        for byte in hr_bytes:
-            value.append(dbus.Byte(byte))
+        hr_str = str(self.heart_rate)
+        for char in hr_str:
+            value.append(dbus.Byte(char.encode()))
         return value
 
     def set_heartrate_callback(self):
@@ -77,8 +77,8 @@ class HRCharacteristic(Characteristic):
         self.notifying = False
 
     def ReadValue(self, options):
-        value = self.get_heartrate()
-        return value
+        """This is called when a client reads the characteristic"""
+        return self.get_heartrate()
 
 class HRDescriptor(Descriptor):
     HR_DESCRIPTOR_UUID = "2901"
@@ -102,7 +102,7 @@ class O2Characteristic(Characteristic):
 
     def __init__(self, service):
         self.notifying = False
-        self.oxygen_level = 0  # Start with 0 instead of default
+        self.oxygen_level = 0
 
         Characteristic.__init__(
             self, self.O2_CHARACTERISTIC_UUID,
@@ -112,16 +112,18 @@ class O2Characteristic(Characteristic):
     def set_oxygen_level(self, o2_value):
         """Update oxygen level value - no validation"""
         self.oxygen_level = o2_value
-        # Force a properties changed signal to update clients
-        value = self.get_oxygen()
-        self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
+        # Notify connected clients of the change
+        if self.notifying:
+            value = self.get_oxygen()
+            self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
         return True
 
     def get_oxygen(self):
-        """Return oxygen level in proper BLE characteristic format"""
+        """Return oxygen level as string bytes (simpler approach)"""
         value = []
-        # Convert integer to single byte (use signed to handle -1)
-        value.append(dbus.Byte(self.oxygen_level))
+        o2_str = str(self.oxygen_level)
+        for char in o2_str:
+            value.append(dbus.Byte(char.encode()))
         return value
 
     def set_oxygen_callback(self):
@@ -143,8 +145,8 @@ class O2Characteristic(Characteristic):
         self.notifying = False
 
     def ReadValue(self, options):
-        value = self.get_oxygen()
-        return value
+        """This is called when a client reads the characteristic"""
+        return self.get_oxygen()
 
 class O2Descriptor(Descriptor):
     O2_DESCRIPTOR_UUID = "2901"

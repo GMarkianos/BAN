@@ -102,13 +102,15 @@ class HeartRateMonitor:
             self.ble_running = False
 
     def update_ble_data(self, heart_rate, oxygen_level):
-        """Update BLE characteristics with new sensor data - no validation"""
+        """Update BLE characteristics with current sensor data - always send"""
         try:
             if self.ble_hr_characteristic:
                 self.ble_hr_characteristic.set_heart_rate(heart_rate)
 
             if self.ble_o2_characteristic:
                 self.ble_o2_characteristic.set_oxygen_level(oxygen_level)
+
+            print(f"📡 BLE Updated - HR: {heart_rate}, O2: {oxygen_level}")
 
         except Exception as e:
             print(f"⚠ BLE data update error: {e}")
@@ -207,9 +209,6 @@ class HeartRateMonitor:
 if __name__ == "__main__":
     monitor = HeartRateMonitor()
 
-    # Check sensor status after initialization
-    print(f"🔍 Sensor Status: {monitor.check_sensor_status()}")
-
     try:
         # Initialize Firebase
         if not firebase_admin._apps:
@@ -247,15 +246,11 @@ if __name__ == "__main__":
                     print(f"📡 BLE: Updated successfully")
                     print("-" * 25)
                 else:
-                    print("⏳ Waiting for valid sensor readings...")
-                    # Try to reset sensor if it keeps returning -1
-                    if monitor.initialized:
-                        print("🔄 Attempting to reset sensor...")
-                        monitor.sensor.sensor_end_collect()
-                        time.sleep(1)
-                        monitor.sensor.sensor_start_collect()
+                    print("⏳ No finger detected or waiting for valid readings...")
+                    # Update BLE with the current values (even if they're -1)
+                    monitor.update_ble_data(hr, o2)
 
-            time.sleep(3)  # Increased delay for sensor stability
+            time.sleep(3)
 
     except KeyboardInterrupt:
         print("\n🛑 Stopping health monitor...")

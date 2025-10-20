@@ -73,7 +73,7 @@ class HeartRateMonitor:
             self.ble_app.register()
             print("✓ GATT application registered")
 
-            # CREATE AND REGISTER ADVERTISEMENT (This was missing!)
+            # CREATE AND REGISTER ADVERTISEMENT
             self.ble_advertisement = SensorAdvertisement(0)
             self.ble_advertisement.register()
             print("✓ BLE advertisement registered")
@@ -85,7 +85,7 @@ class HeartRateMonitor:
 
             print("✓ BLE service started successfully")
             print("📱 Device should now appear as 'HealthSensor' in nRF Connect")
-            time.sleep(3)  # Give BLE more time to initialize
+            time.sleep(3)
 
         except Exception as e:
             print(f"✗ Failed to start BLE service: {e}")
@@ -102,17 +102,13 @@ class HeartRateMonitor:
             self.ble_running = False
 
     def update_ble_data(self, heart_rate, oxygen_level):
-        """Update BLE characteristics with new sensor data"""
+        """Update BLE characteristics with new sensor data - no validation"""
         try:
             if self.ble_hr_characteristic:
-                success = self.ble_hr_characteristic.set_heart_rate(heart_rate)
-                if not success:
-                    print("⚠ Failed to update HR characteristic")
+                self.ble_hr_characteristic.set_heart_rate(heart_rate)
 
             if self.ble_o2_characteristic:
-                success = self.ble_o2_characteristic.set_oxygen_level(oxygen_level)
-                if not success:
-                    print("⚠ Failed to update O2 characteristic")
+                self.ble_o2_characteristic.set_oxygen_level(oxygen_level)
 
         except Exception as e:
             print(f"⚠ BLE data update error: {e}")

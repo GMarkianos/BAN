@@ -34,31 +34,28 @@ class HRCharacteristic(Characteristic):
 
     def __init__(self, service):
         self.notifying = False
-        self.heart_rate = 72  # Default value
+        self.heart_rate = 0  # Start with 0 instead of default
 
         Characteristic.__init__(
             self, self.HR_CHARACTERISTIC_UUID,
-            ["notify", "read"], service)
+            ["read", "notify"], service)
         self.add_descriptor(HRDescriptor(self))
 
     def set_heart_rate(self, hr_value):
-        """Update heart rate value"""
-        # Allow wider range for testing, including -1 for debugging
-        if -1 <= hr_value <= 250:  # Expanded range for testing
-            self.heart_rate = hr_value
-            # Notify subscribers if notifications are enabled
-            if self.notifying:
-                value = self.get_heartrate()
-                self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-            return True
-        print(f"⚠ HR value {hr_value} out of range")
-        return False
+        """Update heart rate value - no validation"""
+        self.heart_rate = hr_value
+        # Force a properties changed signal to update clients
+        value = self.get_heartrate()
+        self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
+        return True
 
     def get_heartrate(self):
+        """Return heart rate in proper BLE characteristic format"""
         value = []
-        strhr = str(self.heart_rate)
-        for c in strhr:
-            value.append(dbus.Byte(c.encode()))
+        # Convert integer to bytes (little-endian)
+        hr_bytes = self.heart_rate.to_bytes(2, byteorder='little', signed=True)
+        for byte in hr_bytes:
+            value.append(dbus.Byte(byte))
         return value
 
     def set_heartrate_callback(self):
@@ -105,31 +102,26 @@ class O2Characteristic(Characteristic):
 
     def __init__(self, service):
         self.notifying = False
-        self.oxygen_level = 98  # Default value
+        self.oxygen_level = 0  # Start with 0 instead of default
 
         Characteristic.__init__(
             self, self.O2_CHARACTERISTIC_UUID,
-            ["notify", "read"], service)
+            ["read", "notify"], service)
         self.add_descriptor(O2Descriptor(self))
 
     def set_oxygen_level(self, o2_value):
-        """Update oxygen level value"""
-        # Allow wider range for testing, including -1 for debugging
-        if -1 <= o2_value <= 100:  # Allow -1 for debugging
-            self.oxygen_level = o2_value
-            # Notify subscribers if notifications are enabled
-            if self.notifying:
-                value = self.get_oxygen()
-                self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-            return True
-        print(f"⚠ O2 value {o2_value} out of range")
-        return False
+        """Update oxygen level value - no validation"""
+        self.oxygen_level = o2_value
+        # Force a properties changed signal to update clients
+        value = self.get_oxygen()
+        self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
+        return True
 
     def get_oxygen(self):
+        """Return oxygen level in proper BLE characteristic format"""
         value = []
-        stro2 = str(self.oxygen_level)
-        for c in stro2:
-            value.append(dbus.Byte(c.encode()))
+        # Convert integer to single byte (use signed to handle -1)
+        value.append(dbus.Byte(self.oxygen_level))
         return value
 
     def set_oxygen_callback(self):

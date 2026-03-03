@@ -1,1 +1,1 @@
-This files contains the files for communication via LoRa.
+This folder contains the files for communication via LoRa.

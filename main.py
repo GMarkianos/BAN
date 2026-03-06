@@ -2,7 +2,7 @@ import firebase_admin
 import time
 from sensor.hr_monitor import HeartRateMonitor
 from Comms.wifi.server import cred
-
+from Comms.lora import lora
 # Main program
 if __name__ == "__main__":
     monitor = HeartRateMonitor()
@@ -14,11 +14,18 @@ if __name__ == "__main__":
                 "databaseURL": "https://ban-net-default-rtdb.europe-west1.firebasedatabase.app/"
             })
 
-        print("🚀 Health Monitor Running...")
-        print("Press Ctrl+C to stop")
-        print("Look for 'HealthSensor' in nRF Connect")
-        print("-" * 50)
-
+        lora = LoRaHealthSender(
+            device_id="01",
+            m0_pin=25,      # Your GPIO 25
+            m1_pin=23,      # Your GPIO 23
+            aux_pin=24,     # Your GPIO 24
+            port='/dev/serial0',
+            baud=9600
+        )
+        try: 
+            lora.connect()
+        except Exception as e:
+            print(f"LoRa error: {e}")
         # Wait a bit for sensor to stabilize
         time.sleep(2)
 
@@ -27,24 +34,30 @@ if __name__ == "__main__":
 
             if readings:
                 # Display raw readings for debugging
-                hr = readings['heart_rate']
-                o2 = readings['spo2']
+                #hr = readings['heart_rate']
+                #o2 = readings['spo2']
 
                 print(f"Raw Sensor - HR: {hr}, O2: {o2}")
 
                 if hr != -1 and o2 != -1:
                     # Write data for BLE process and update BLE directly
                     monitor.write_sensor_data(readings)
+                    
+                    lora.send_health_data(
+                        heart_rate=hr,
+                        spo2=o2
+                    )
 
                     # Update BLE characteristics
                     monitor.update_ble_data(hr, o2)
 
-                    print(f"Heart Rate: {hr:3d} bpm")
-                    print(f"SpO2: {o2:2d}%")
-                    print(f"BLE: Updated successfully")
+                    ref = db.reference("/")
+                    ref.update({"O2" : o2})
+                    ref.update({"hr": hr})
+                    
                     print("\n\n")
                 else:
-                    print("⏳ No finger detected or waiting for valid readings...")
+                    print("No finger detected or waiting for valid readings...")
                     # Update BLE with the current values (even if they're -1)
                     monitor.update_ble_data(hr, o2)
 

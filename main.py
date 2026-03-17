@@ -1,11 +1,16 @@
 import firebase_admin
 import time
-from sensor.hr_monitor import HeartRateMonitor
+from firebase_admin import db
+from sensor.sensor import Sensor
+from sensor.ble_agent import BLEAgent
 from Comms.wifi.server import cred
 from Comms.lora import lora
+
 # Main program
 if __name__ == "__main__":
-    monitor = HeartRateMonitor()
+    # Initialize separate entities
+    sensor = Sensor()
+    ble_agent = BLEAgent()
 
     try:
         # Initialize Firebase
@@ -14,7 +19,8 @@ if __name__ == "__main__":
                 "databaseURL": "https://ban-net-default-rtdb.europe-west1.firebasedatabase.app/"
             })
 
-        lora = LoRaHealthSender(
+        # Initialize LoRa
+        lora_sender = lora.LoRaHealthSender(
             device_id="01",
             m0_pin=25,      # Your GPIO 25
             m1_pin=23,      # Your GPIO 23
@@ -23,43 +29,48 @@ if __name__ == "__main__":
             baud=9600
         )
         try: 
-            lora.connect()
+            lora_sender.connect()
         except Exception as e:
             print(f"LoRa error: {e}")
+
+        # Start BLE service
+        ble_agent.start()
+
         # Wait a bit for sensor to stabilize
         time.sleep(2)
 
         while True:
-            readings = monitor.get_readings()
+            readings = sensor.get_readings()
 
             if readings:
-                # Display raw readings for debugging
-                #hr = readings['heart_rate']
-                #o2 = readings['spo2']
+                hr = readings['heart_rate']
+                o2 = readings['spo2']
 
                 print(f"Raw Sensor - HR: {hr}, O2: {o2}")
 
                 if hr != -1 and o2 != -1:
-                    # Write data for BLE process and update BLE directly
-                    monitor.write_sensor_data(readings)
-                    
-                    lora.send_health_data(
+                    # Write data to shared file (handled by sensor)
+                    sensor.write_data(readings)
+
+                    # Send via LoRa
+                    lora_sender.send_health_data(
                         heart_rate=hr,
                         spo2=o2
                     )
 
-                    # Update BLE characteristics
-                    monitor.update_ble_data(hr, o2)
+                    # Update BLE characteristics (handled by ble_agent)
+                    ble_agent.update_data(hr, o2)
 
+                    # Update Firebase
                     ref = db.reference("/")
-                    ref.update({"O2" : o2})
+                    ref.update({"O2": o2})
                     ref.update({"hr": hr})
-                    
+
                     print("\n\n")
                 else:
                     print("No finger detected or waiting for valid readings...")
                     # Update BLE with the current values (even if they're -1)
-                    monitor.update_ble_data(hr, o2)
+                    ble_agent.update_data(hr, o2)
 
             time.sleep(3)
 
@@ -68,7 +79,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"!!!Unexpected error!!!: {e}")
         import traceback
-
         traceback.print_exc()
     finally:
-        monitor.cleanup()
+        sensor.cleanup()
+        ble_agent.cleanup()

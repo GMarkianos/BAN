@@ -1,16 +1,32 @@
 import firebase_admin
 import time
+import signal
+import sys
 from firebase_admin import db
-from sensor.sensorHRO2 import Sensor
-from Comms.bluetooth.ble_agent import BLEAgent
+from sensor.sensor import Sensor
+from sensor.ble_agent import BLEAgent
 from Comms.wifi.server import cred
-from Comms.lora import lora
+from Comms.lora.lora import LoRaHealthSender
+
+# Global flag for clean shutdown
+running = True
+
+def signal_handler(sig, frame):
+    """Handle shutdown signals gracefully"""
+    global running
+    print("\n🛑 Received shutdown signal...")
+    running = False
+
+# Register signal handlers
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 # Main program
 if __name__ == "__main__":
     # Initialize separate entities
     sensor = Sensor()
     ble_agent = BLEAgent()
+    lora_sender = None
 
     try:
         # Initialize Firebase
@@ -20,18 +36,19 @@ if __name__ == "__main__":
             })
 
         # Initialize LoRa
-        lora_sender = lora.LoRaHealthSender(
-            device_id="01",
-            m0_pin=25,      # Your GPIO 25
-            m1_pin=23,      # Your GPIO 23
-            aux_pin=24,     # Your GPIO 24
-            port='/dev/serial0',
-            baud=9600
-        )
-        try: 
+        try:
+            lora_sender = LoRaHealthSender(
+                device_id="01",
+                m0_pin=25,      # Your GPIO 25
+                m1_pin=23,      # Your GPIO 23
+                aux_pin=24,     # Your GPIO 24
+                port='/dev/serial0',
+                baud=9600
+            )
             lora_sender.connect()
         except Exception as e:
-            print(f"LoRa error: {e}")
+            print(f"LoRa initialization error: {e}")
+            lora_sender = None
 
         # Start BLE service
         ble_agent.start()
@@ -39,7 +56,7 @@ if __name__ == "__main__":
         # Wait a bit for sensor to stabilize
         time.sleep(2)
 
-        while True:
+        while running:
             readings = sensor.get_readings()
 
             if readings:
@@ -52,19 +69,26 @@ if __name__ == "__main__":
                     # Write data to shared file (handled by sensor)
                     sensor.write_data(readings)
 
-                    # Send via LoRa
-                    lora_sender.send_health_data(
-                        heart_rate=hr,
-                        spo2=o2
-                    )
+                    # Send via LoRa (if initialized)
+                    if lora_sender:
+                        try:
+                            lora_sender.send_health_data(
+                                heart_rate=hr,
+                                spo2=o2
+                            )
+                        except Exception as e:
+                            print(f"LoRa send error: {e}")
 
                     # Update BLE characteristics (handled by ble_agent)
                     ble_agent.update_data(hr, o2)
 
                     # Update Firebase
-                    ref = db.reference("/")
-                    ref.update({"O2": o2})
-                    ref.update({"hr": hr})
+                    try:
+                        ref = db.reference("/")
+                        ref.update({"O2": o2})
+                        ref.update({"hr": hr})
+                    except Exception as e:
+                        print(f"Firebase update error: {e}")
 
                     print("\n\n")
                 else:
@@ -81,5 +105,7 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
     finally:
-        sensor.cleanup()
-        ble_agent.cleanup()
+        # Stop both components
+        sensor.stop()
+        ble_agent.stop()
+        print("\n✓ Program terminated cleanly")

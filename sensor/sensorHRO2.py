@@ -1,6 +1,5 @@
 import sys
 import atexit
-import signal
 import time
 import json
 import os
@@ -13,22 +12,25 @@ class Sensor:
     def __init__(self):
         self._sensor = DFRobot_BloodOxygen_S_i2c(1, 0x57)
         self._initialized = False
+        self._running = False
 
         if self._sensor.begin():
             self._sensor.sensor_start_collect()
             self._initialized = True
+            self._running = True
             print("✓ Sensor started successfully")
 
-            # Register cleanup handlers
+            # Register cleanup handler only
             atexit.register(self.cleanup)
-            signal.signal(signal.SIGINT, self._signal_handler)
-            signal.signal(signal.SIGTERM, self._signal_handler)
         else:
             print("✗ Sensor initialization failed!")
 
     def cleanup(self):
         """Properly shutdown sensor"""
-        print("Cleaning up sensor...")
+        if not self._running:
+            return
+
+        print("🛑 Cleaning up sensor...")
 
         # Stop sensor
         if self._initialized:
@@ -43,17 +45,16 @@ class Sensor:
         except:
             pass
 
+        self._running = False
         print("✓ Sensor cleanup complete")
 
-    def _signal_handler(self, sig, frame):
-        """Handle Ctrl+C and other termination signals"""
-        print("\n Received shutdown signal...")
+    def stop(self):
+        """Stop the sensor without exiting program"""
         self.cleanup()
-        sys.exit(0)
 
     def get_readings(self):
         """Get current sensor readings"""
-        if not self._initialized:
+        if not self._initialized or not self._running:
             return None
 
         self._sensor.get_heartbeat_SPO2()
@@ -64,6 +65,9 @@ class Sensor:
 
     def write_data(self, readings):
         """Write sensor data to shared file"""
+        if not self._running:
+            return
+
         try:
             data = {
                 'heart_rate': readings['heart_rate'],

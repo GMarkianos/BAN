@@ -2,7 +2,7 @@ import firebase_admin
 import time
 from firebase_admin import db
 from sensor.sensorHRO2 import Sensor
-from bluetooth.ble_agent import BLEAgent
+from Comms.bluetooth.ble_agent import BLEAgent
 from Comms.wifi.server import cred
 from Comms.lora import lora
 

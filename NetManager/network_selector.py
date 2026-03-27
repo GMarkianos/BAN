@@ -45,7 +45,7 @@ class NetworkSelector:
     def ble_available(self):
 
         try:
-            return self.ble_agent.is_connected()
+            return self.ble_agent._initialized()
         except:
             return False
 

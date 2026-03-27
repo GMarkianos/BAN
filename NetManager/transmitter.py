@@ -1,3 +1,5 @@
+import firebase_admin
+
 class Transmitter:
 
     def __init__(self, ble_agent, lora_sender):

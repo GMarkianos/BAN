@@ -40,6 +40,7 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
     try:
+        #Initialize LoRa
         lora_sender = LoRaHealthSender(
             device_id="01",
             m0_pin=25,      # Your GPIO 25
@@ -68,37 +69,32 @@ if __name__ == "__main__":
         while running:
             readings = sensor.get_readings()
 
-            if readings:
-                hr = readings['heart_rate']
-                o2 = readings['spo2']
+            hr = readings['heart_rate']
+            o2 = readings['spo2']
+            print(hr,o2)
+            msg_type = selector.classify_message(hr, o2)
 
-                #print(f"Raw Sensor - HR: {hr}, O2: {o2}")
+            network = selector.choose_network(msg_type)
 
-                # Write data to shared file (handled by sensor)
-                sensor.write_data(readings)
+            print("Message type:", msg_type)
+            print("Selected network:", network)
 
-                # Send via LoRa (if initialized)
-                if lora_sender:
-                    try:
-                        lora_sender.send_health_data(
-                            heart_rate=hr,
-                            spo2=o2
-                        )
-                    except Exception as e:
-                        print(f"LoRa send error: {e}")
+            success = False
+            if not queue.empty():
 
-                # Update BLE characteristics (handled by ble_agent)
-                ble_agent.update_data(hr, o2)
+                msg = queue.get()
 
-                # Update Firebase
-                try:
-                    ref = db.reference("/")
-                    ref.update({"O2": o2})
-                    ref.update({"hr": hr})
-                except Exception as e:
-                    print(f"Firebase update error: {e}")
-                    
-                print("\n\n")
+                network = selector.choose_network("MONITORING")
+
+                if network:
+                    transmitter.send(network, msg["hr"], msg["spo2"])
+            elif network:
+
+                success = transmitter.send(network, hr, o2)
+
+            if not success:
+
+                queue.add(hr, o2)
 
             time.sleep(1)
 

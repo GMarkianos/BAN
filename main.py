@@ -71,7 +71,6 @@ if __name__ == "__main__":
 
             hr = readings['heart_rate']
             o2 = readings['spo2']
-            print(hr,o2)
             msg_type = selector.classify_message(hr, o2)
 
             network = selector.choose_network(msg_type)

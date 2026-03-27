@@ -115,5 +115,4 @@ class NetworkSelector:
         if scores[optimal_network] < 0:
             return None
 
-        '''return optimal_network'''
-        return "LORA"
+        return optimal_network

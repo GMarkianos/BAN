@@ -13,7 +13,7 @@ class Transmitter:
 
             if network == "BLE":
 
-                self.ble_agent.update_data(hr, spo2)
+                self.ble.update_data(hr, spo2)
 
             elif network == "WIFI":
 

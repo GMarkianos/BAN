@@ -116,4 +116,4 @@ class NetworkSelector:
             return None
 
         '''return optimal_network'''
-        return "BLE"
+        return "LORA"

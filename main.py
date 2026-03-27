@@ -7,14 +7,16 @@ from sensor.sensorHRO2 import Sensor
 from Comms.bluetooth.ble_agent import BLEAgent
 from Comms.wifi.server import cred
 from Comms.lora.lora import LoRaHealthSender
-
+from NetManager.transmitter import Transmitter
+from NetManager.network_selector import NetworkSelector
+from NetManager.mqueue import MessageQueue
 # Global flag for clean shutdown
 running = True
 
 def signal_handler(sig, frame):
     """Handle shutdown signals gracefully"""
     global running
-    print("\n🛑 Received shutdown signal...")
+    print("\n Received shutdown signal...")
     running = False
 
 # Register signal handlers
@@ -27,28 +29,35 @@ if __name__ == "__main__":
     sensor = Sensor()
     ble_agent = BLEAgent()
     lora_sender = None
-
     try:
         # Initialize Firebase
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred, {
                 "databaseURL": "https://ban-net-default-rtdb.europe-west1.firebasedatabase.app/"
             })
+    except Exception as e:
+        print(f"!!!Unexpected firebse error!!!: {e}")
+        import traceback
+        traceback.print_exc()
+    try:
+        lora_sender = LoRaHealthSender(
+            device_id="01",
+            m0_pin=25,      # Your GPIO 25
+            m1_pin=23,      # Your GPIO 23
+            aux_pin=24,     # Your GPIO 24
+            port='/dev/serial0',
+            baud=9600
+        )
+        lora_sender.connect()
+    except Exception as e:
+        print(f"LoRa initialization error: {e}")
+        lora_sender = None
 
-        # Initialize LoRa
-        try:
-            lora_sender = LoRaHealthSender(
-                device_id="01",
-                m0_pin=25,      # Your GPIO 25
-                m1_pin=23,      # Your GPIO 23
-                aux_pin=24,     # Your GPIO 24
-                port='/dev/serial0',
-                baud=9600
-            )
-            lora_sender.connect()
-        except Exception as e:
-            print(f"LoRa initialization error: {e}")
-            lora_sender = None
+    selector = NetworkSelector(ble_agent, True, lora_sender)
+    transmitter = Transmitter(ble_agent, lora_sender)
+    queue = MessageQueue()
+    
+    try:
 
         # Start BLE service
         ble_agent.start()
@@ -63,40 +72,35 @@ if __name__ == "__main__":
                 hr = readings['heart_rate']
                 o2 = readings['spo2']
 
-                print(f"Raw Sensor - HR: {hr}, O2: {o2}")
+                #print(f"Raw Sensor - HR: {hr}, O2: {o2}")
 
-                if hr != -1 and o2 != -1:
-                    # Write data to shared file (handled by sensor)
-                    sensor.write_data(readings)
+                # Write data to shared file (handled by sensor)
+                sensor.write_data(readings)
 
-                    # Send via LoRa (if initialized)
-                    if lora_sender:
-                        try:
-                            lora_sender.send_health_data(
-                                heart_rate=hr,
-                                spo2=o2
-                            )
-                        except Exception as e:
-                            print(f"LoRa send error: {e}")
-
-                    # Update BLE characteristics (handled by ble_agent)
-                    ble_agent.update_data(hr, o2)
-
-                    # Update Firebase
+                # Send via LoRa (if initialized)
+                if lora_sender:
                     try:
-                        ref = db.reference("/")
-                        ref.update({"O2": o2})
-                        ref.update({"hr": hr})
+                        lora_sender.send_health_data(
+                            heart_rate=hr,
+                            spo2=o2
+                        )
                     except Exception as e:
-                        print(f"Firebase update error: {e}")
+                        print(f"LoRa send error: {e}")
 
-                    print("\n\n")
-                else:
-                    print("No finger detected or waiting for valid readings...")
-                    # Update BLE with the current values (even if they're -1)
-                    ble_agent.update_data(hr, o2)
+                # Update BLE characteristics (handled by ble_agent)
+                ble_agent.update_data(hr, o2)
 
-            time.sleep(3)
+                # Update Firebase
+                try:
+                    ref = db.reference("/")
+                    ref.update({"O2": o2})
+                    ref.update({"hr": hr})
+                except Exception as e:
+                    print(f"Firebase update error: {e}")
+                    
+                print("\n\n")
+
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("\nStopping health monitor...")

@@ -40,6 +40,9 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
     try:
+        # Start BLE service
+        ble_agent.start()
+
         #Initialize LoRa
         lora_sender = LoRaHealthSender(
             device_id="01",
@@ -58,13 +61,10 @@ if __name__ == "__main__":
     transmitter = Transmitter(ble_agent, lora_sender)
     queue = MessageQueue()
     
+    # Wait a bit for sensor to stabilize
+    time.sleep(2)
+
     try:
-
-        # Start BLE service
-        ble_agent.start()
-
-        # Wait a bit for sensor to stabilize
-        time.sleep(2)
 
         while running:
             readings = sensor.get_readings()
@@ -72,28 +72,49 @@ if __name__ == "__main__":
             hr = readings['heart_rate']
             o2 = readings['spo2']
             msg_type = selector.classify_message(hr, o2)
+            msg = {"hr": hr, "spo2": o2,"type": msg_type}
 
-            network = selector.choose_network(msg_type)
-
-            print("Message type:", msg_type)
-            print("Selected network:", network)
 
             success = False
+            best, second = selector.choose_network(msg)
             if not queue.empty():
 
                 msg = queue.get()
 
-                network = selector.choose_network("MONITORING")
+                best, second = selector.choose_network(msg)
+                if msg["type"] == "w" and best:
+                    success1 = transmitter.send(best,msg)
+                    success2 = transmitter.send(second, msg) if second else False
 
-                if network:
-                    transmitter.send(network, msg["hr"], msg["spo2"])
-            elif network:
+                    selector.update_stats(best, success1)
+                    if second:
+                        selector.update_stats(second, success2)
 
-                success = transmitter.send(network, hr, o2)
+                    success = success1 or success2 
+                else:
+                    success = transmitter.send(best, msg)
+                    selector.update_stats(best, success)
 
+            elif best:
+                if msg["type"] == "w" and best:
+                    success1 = transmitter.send(best,msg)
+                    success2 = transmitter.send(second, msg) if second else False
+
+                    selector.update_stats(best, success1)
+                    if second:
+                        selector.update_stats(second, success2)
+
+                    success = success1 or success2 
+                else:
+                    success = transmitter.send(best, msg)
+                    selector.update_stats(best, success)
+
+            if best:
+                print("Message type:", msg["type"])
+                print("Selected network:", best)
             if not success:
 
-                queue.add(hr, o2)
+                queue.add(msg)
 
             time.sleep(1)
 

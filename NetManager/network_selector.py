@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import time
+import json
 
 class NetworkSelector:
 
@@ -10,10 +11,25 @@ class NetworkSelector:
         self.wifi_enabled = wifi_enabled
         self.lora_sender = lora_sender
 
+        # Reliability tracking
+        self.stats = {
+            "BLE": {"success": 0, "fail": 0},
+            "WIFI": {"success": 0, "fail": 0},
+            "LORA": {"success": 0, "fail": 0}
+        }
+
+        # Energy model
+        self.consumptions = {
+            "BLE": {"base": 0.2, "per_byte": 0.001, "per_sec": 0.05},
+            "WIFI": {"base": 1.0, "per_byte": 0.002, "per_sec": 0.2},
+            "LORA": {"base": 0.5, "per_byte": 0.0005, "per_sec": 0.1}
+        }
+
+        # Static properties (for scoring)
         self.networks = {
-            "BLE": {"energy": 1, "latency": 2, "range": 1},
-            "WIFI": {"energy": 3, "latency": 1, "range": 2},
-            "LORA": {"energy": 2, "latency": 3, "range": 3}
+            "BLE": {"latency": 0.5, "range": 0.2},
+            "WIFI": {"latency": 1.0, "range": 0.5},
+            "LORA": {"latency": 0.3, "range": 1.0}
         }
 
     # ------------------------------
@@ -23,12 +39,87 @@ class NetworkSelector:
     def classify_message(self, hr, spo2):
 
         if hr < 40 or hr > 140 or spo2 < 90:
-            return "WARNING"
-
-        return "MONITORING"
+            return "w"
+        return "m"
 
     # ------------------------------
-    # NETWORK AVAILABILITY
+    # RELIABILITY
+    # ------------------------------
+    def update_stats(self, network, success):
+        if success:
+            self.stats[network]["success"] += 1
+        else:
+            self.stats[network]["fail"] += 1
+
+    def get_reliability(self, network):
+        s = self.stats[network]["success"]
+        f = self.stats[network]["fail"]
+
+        if s + f == 0:
+            return 0.5
+
+        return s / (s + f)
+    # ------------------------------
+    #TIME
+    # ------------------------------
+    def estimate_tx_time(self, network, payload_size):
+
+        speeds = { # bytes/sec
+            "BLE": 50000,  
+            "WIFI": 1000000,
+            "LORA": 3000
+        }
+
+        return payload_size / speeds[network]
+
+    # ------------------------------
+    # ENERGY
+    # ------------------------------
+    def estimate_energy(self, network, payload_size, tx_time):
+        model = self.consumptions[network]
+
+        return (
+            model["base"]
+            + model["per_byte"] * payload_size
+            + model["per_sec"] * tx_time
+        )
+
+    def normalize_energy(self, energy):
+        return 1 / (1 + energy) 
+
+    def calc_payload(self, msg):
+        return len(json.dumps(msg).encode('utf-8'))
+    
+    # ------------------------------
+    # SIGNAL STRENGTH
+    # ------------------------------
+    def wifi_strength(self):
+        try:
+            result = subprocess.check_output("iwconfig wlan0", shell=True).decode()
+
+            for line in result.split("\n"):
+                if "Signal level" in line:
+                    level = int(line.split("Signal level=")[1].split(" ")[0])
+                    return min(max((level + 100) / 70, 0), 1)
+        except:
+            return 0.5
+
+    def ble_strength(self):
+        return 0.6  # placeholder (will improve later)
+
+    def lora_strength(self):
+        return 0.8  # placeholder
+
+    def get_signal_strength(self, network):
+        if network == "WIFI":
+            return self.wifi_strength()
+        elif network == "BLE":
+            return self.ble_strength()
+        elif network == "LORA":
+            return self.lora_strength()
+
+    # ------------------------------
+    # AVAILABILITY
     # ------------------------------
 
     def wifi_available(self):
@@ -43,54 +134,65 @@ class NetworkSelector:
             return False
 
     def ble_available(self):
-
+        
         try:
-            return self.ble_agent._initialized()
+            return self.ble_agent is not None
         except:
             return False
 
     def lora_available(self):
-
+        
         return self.lora_sender is not None
 
     # ------------------------------
-    # NETWORK SCORING
+    # SCORING
     # ------------------------------
-
-    def score_network(self, network, message_type, available):
-
+    def score_network(self, network, available,msg):
+        payload = self.calc_payload(msg)
         if not available:
             return -1
 
-        props = self.networks[network]
+        reliability = self.get_reliability(network)
+        signal = self.get_signal_strength(network)
 
-        energy = props["energy"]
-        latency = props["latency"]
-        range_ = props["range"]
+        energy_raw = self.estimate_energy(network, payload, tx_time = self.estimate_tx_time(network, payload))
+        energy = self.normalize_energy(energy_raw)
 
-        if message_type == "MONITORING":
+        latency = self.networks[network]["latency"]
+        range_ = self.networks[network]["range"]
 
-            score = (
-                (5 - energy) * 3 +
-                (5 - latency) * 1 +
-                (5 - range_) * 1
-            )
-
+        # Weights depending on message type
+        if msg["type"] == "m":
+            w = {
+                "reliability": 0.3,
+                "signal": 0.2,
+                "range": 0.2,
+                "energy": 0.3,
+                "latency": 0.1
+            }
         else:  # WARNING
+            w = {
+                "reliability": 0.4,
+                "signal": 0.2,
+                "range": 0.2,
+                "energy": 0.1,
+                "latency": 0.3
+            }
 
-            score = (
-                (5 - latency) * 4 +
-                (5 - range_) * 3 +
-                (5 - energy) * 1
-            )
+        score = (
+            w["reliability"] * reliability
+            + w["signal"] * signal
+            + w["range"] * range_
+            + w["energy"] * energy
+            - w["latency"] * latency
+        )
 
         return score
 
     # ------------------------------
     # SELECT BEST NETWORK
     # ------------------------------
-
-    def choose_network(self, message_type):
+    def choose_network(self, msg):
 
         availability = {
             "BLE": self.ble_available(),
@@ -101,18 +203,19 @@ class NetworkSelector:
         scores = {}
 
         for net in availability:
+            scores[net] = self.score_network(net, availability[net], msg)
 
-            score = self.score_network(
-                net,
-                message_type,
-                availability[net]
-            )
+        valid_scores = {k: v for k, v in scores.items() if v >= 0}
 
-            scores[net] = score
+        sorted_nets = sorted(valid_scores, key=valid_scores.get, reverse=True)
 
-        optimal_network = max(scores, key=scores.get)
+        best = sorted_nets[0] if len(sorted_nets) > 0 else None
+        second = sorted_nets[1] if len(sorted_nets) > 1 else None
 
-        if scores[optimal_network] < 0:
-            return None
+        if best is None: 
+            return None, None
 
-        return optimal_network
+        if scores[best] < 0:
+            return None, None
+
+        return best, second

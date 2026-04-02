@@ -7,31 +7,31 @@ class Transmitter:
         self.ble = ble_agent
         self.lora = lora_sender
 
-    def send(self, network, hr, spo2):
+    def send(self, network, msg):
 
         try:
 
             if network == "BLE":
-
-                self.ble.update_data(hr, spo2)
+                
+                self.ble.update_data(msg["hr"], msg["spo2"])
 
             elif network == "WIFI":
 
                 from firebase_admin import db
                 ref = db.reference("/")
-                ref.update({"hr": hr, "O2": spo2})
+                ref.update({"hr": msg["hr"], "O2": msg["spo2"]})
 
             elif network == "LORA":
 
                 self.lora.send_health_data(
-                    heart_rate=hr,
-                    spo2=spo2
+                    heart_rate= msg["hr"],
+                    spo2=msg["spo2"]
                 )
 
             return True
 
         except Exception as e:
 
-            print("Transmition error:", e)
+            print("Transmission error:", e)
 
             return False

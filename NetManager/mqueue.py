@@ -6,12 +6,9 @@ class MessageQueue:
 
         self.queue = deque()
 
-    def add(self, hr, spo2):
+    def add(self, msg):
 
-        self.queue.append({
-            "hr": hr,
-            "spo2": spo2
-        })
+        self.queue.append(msg)
 
     def get(self):
 

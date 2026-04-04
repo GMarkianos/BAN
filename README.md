@@ -55,6 +55,4 @@ The system consists of:
 - Cloud-based dashboard for real-time visualization  
 - Expansion to additional sensor types  
 
----
 
-## 📂 Repository Structure

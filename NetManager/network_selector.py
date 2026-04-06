@@ -12,7 +12,13 @@ class NetworkSelector:
         self.lora_sender = lora_sender
 
         # Reliability tracking
-        self.stats = {
+        self.stats_w = {
+            "BLE": {"success": 0, "fail": 0},
+            "WIFI": {"success": 0, "fail": 0},
+            "LORA": {"success": 0, "fail": 0}
+        }
+
+        self.stats_m = {
             "BLE": {"success": 0, "fail": 0},
             "WIFI": {"success": 0, "fail": 0},
             "LORA": {"success": 0, "fail": 0}
@@ -45,16 +51,25 @@ class NetworkSelector:
     # ------------------------------
     # RELIABILITY
     # ------------------------------
-    def update_stats(self, network, success):
+    def update_stats(self, network, success, message_type):
         if success:
-            self.stats[network]["success"] += 1
+            if(message_type == 'w'):
+                self.stats_w[network]["success"] += 1
+            else:
+                self.stats_m[network]["success"] += 1
         else:
-            self.stats[network]["fail"] += 1
+            if(message_type == 'w'):
+                self.stats_w[network]["fail"] += 1
+            else:
+                self.stats_m[network]["fail"] += 1
 
-    def get_reliability(self, network):
-        s = self.stats[network]["success"]
-        f = self.stats[network]["fail"]
-
+    def get_reliability(self, network, msg):
+        if(msg["type" == 'w']):
+            s = self.stats_w[network]["success"]
+            f = self.stats_w[network]["fail"]
+        else:
+            s = self.stats_m[network]["success"]
+            f = self.stats_m[network]["fail"]
         if s + f == 0:
             return 0.5
 
@@ -147,7 +162,7 @@ class NetworkSelector:
     # ------------------------------
     # SCORING
     # ------------------------------
-    def score_network(self, network, available,msg):
+    def score_network(self, network, available, msg):
         payload = self.calc_payload(msg)
         if not available:
             return -1

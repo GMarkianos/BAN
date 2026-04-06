@@ -86,28 +86,28 @@ if __name__ == "__main__":
                     success1 = transmitter.send(best,msg)
                     success2 = transmitter.send(second, msg) if second else False
 
-                    selector.update_stats(best, success1)
+                    selector.update_stats(best, success1,msg["type"])
                     if second:
-                        selector.update_stats(second, success2)
+                        selector.update_stats(second, success2,msg)["type"]
 
                     success = success1 or success2 
                 else:
                     success = transmitter.send(best, msg)
-                    selector.update_stats(best, success)
+                    selector.update_stats(best, success ,msg["type"])
 
             elif best:
                 if msg["type"] == "w" and best:
                     success1 = transmitter.send(best,msg)
                     success2 = transmitter.send(second, msg) if second else False
 
-                    selector.update_stats(best, success1)
+                    selector.update_stats(best, success1, msg["type"])
                     if second:
-                        selector.update_stats(second, success2)
+                        selector.update_stats(second, success2, msg["type"])
 
                     success = success1 or success2 
                 else:
                     success = transmitter.send(best, msg)
-                    selector.update_stats(best, success)
+                    selector.update_stats(best, success, msg["type"])
 
             if best:
                 print("Message type:", msg["type"])

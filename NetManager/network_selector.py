@@ -167,8 +167,8 @@ class NetworkSelector:
         if not available:
             return -1
 
-        reliability = self.get_reliability(network)
-        signal = self.get_signal_strength(network)
+        reliability = self.get_reliability(network, msg)
+        signal = self.get_signal_strength(network, msg)
 
         energy_raw = self.estimate_energy(network, payload, tx_time = self.estimate_tx_time(network, payload))
         energy = self.normalize_energy(energy_raw)

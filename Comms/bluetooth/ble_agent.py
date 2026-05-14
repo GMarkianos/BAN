@@ -24,7 +24,7 @@ class BLEAgent:
     def start(self):
         """Start BLE service"""
         try:
-            print("🔄 Initializing BLE service...")
+            #print("🔄 Initializing BLE service...")
 
             # Create BLE application
             self._ble_app = Application()
@@ -39,17 +39,17 @@ class BLEAgent:
             for characteristic in sensor_service.characteristics:
                 if hasattr(characteristic, 'HR_CHARACTERISTIC_UUID'):
                     self._ble_hr_characteristic = characteristic
-                    print("✓ Found HR characteristic")
+                    #print("✓ Found HR characteristic")
                 elif hasattr(characteristic, 'O2_CHARACTERISTIC_UUID'):
                     self._ble_o2_characteristic = characteristic
-                    print("✓ Found O2 characteristic")
+                    #print("✓ Found O2 characteristic")
 
             # Add service to application
             self._ble_app.add_service(sensor_service)
 
             # Register BLE application
             self._ble_app.register()
-            print("✓ GATT application registered")
+            #print("✓ GATT application registered")
 
             # Wait a moment before registering advertisement (critical timing!)
             time.sleep(0.5)
@@ -57,7 +57,7 @@ class BLEAgent:
             # CREATE AND REGISTER ADVERTISEMENT
             self._ble_advertisement = SensorAdvertisement(0)
             self._ble_advertisement.register()
-            print("✓ BLE advertisement registered")
+            #print("✓ BLE advertisement registered")
 
             # Start BLE in background thread
             self._ble_running = True
@@ -65,7 +65,7 @@ class BLEAgent:
             self._ble_thread.start()
 
             self._initialized = True
-            print("✓ BLE service started successfully")
+            #print("✓ BLE service started successfully")
             print("📱 Device should now appear as 'HealthSensor' in nRF Connect")
             time.sleep(3)
             return True
@@ -96,9 +96,7 @@ class BLEAgent:
 
             if self._ble_o2_characteristic:
                 self._ble_o2_characteristic.set_oxygen_level(oxygen_level)
-
-            print(f"📡 BLE Updated - HR: {heart_rate}, O2: {oxygen_level}")
-
+                
         except Exception as e:
             print(f"⚠ BLE data update error: {e}")
 
@@ -111,17 +109,17 @@ class BLEAgent:
         if not self._initialized:
             return
 
-        print("🛑 Cleaning up BLE agent...")
+        #print("🛑 Cleaning up BLE agent...")
 
         # Stop BLE service
         if self._ble_app:
-            print("Stopping BLE service...")
+            #print("Stopping BLE service...")
             self._ble_app.quit()
             self._ble_running = False
 
         # Stop BLE advertisement
         if self._ble_advertisement:
-            print("Stopping BLE advertisement...")
+            #print("Stopping BLE advertisement...")
             try:
                 from Comms.bluetooth.bletools import BleTools
                 import dbus
@@ -136,7 +134,7 @@ class BLEAgent:
                 pass  # Ignore errors during cleanup
 
         self._initialized = False
-        print("✓ BLE cleanup complete")
+        #print("✓ BLE cleanup complete")
 
     def stop(self):
         """Stop BLE without atexit cleanup"""

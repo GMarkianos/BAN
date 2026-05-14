@@ -132,3 +132,4 @@ class Advertisement(dbus.service.Object):
         ad_manager.RegisterAdvertisement(self.get_path(), {},
                                      reply_handler=self.register_ad_callback,
                                      error_handler=self.register_ad_error_callback)
+        

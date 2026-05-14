@@ -64,7 +64,7 @@ class NetworkSelector:
                 self.stats_m[network]["fail"] += 1
 
     def get_reliability(self, network, msg):
-        if(msg["type" == 'w']):
+        if(msg["type"] == 'w'):
             s = self.stats_w[network]["success"]
             f = self.stats_w[network]["fail"]
         else:

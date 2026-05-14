@@ -2,6 +2,7 @@ import socket
 import subprocess
 import time
 import json
+import random
 
 class NetworkSelector:
 
@@ -109,21 +110,13 @@ class NetworkSelector:
     # SIGNAL STRENGTH
     # ------------------------------
     def wifi_strength(self):
-        try:
-            result = subprocess.check_output("iwconfig wlan0", shell=True).decode()
-
-            for line in result.split("\n"):
-                if "Signal level" in line:
-                    level = int(line.split("Signal level=")[1].split(" ")[0])
-                    return min(max((level + 100) / 70, 0), 1)
-        except:
-            return 0.5
+        return random.uniform(0.4, 0.9)
 
     def ble_strength(self):
-        return 0.6  # placeholder (will improve later)
+        return random.uniform(0.3, 0.7)
 
     def lora_strength(self):
-        return 0.8  # placeholder
+        return random.uniform(0.7, 1.0)
 
     def get_signal_strength(self, network):
         if network == "WIFI":

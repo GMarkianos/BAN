@@ -115,13 +115,13 @@ if __name__ == "__main__":
             print(msg['type'])
             print(
                     f"_____________________________________________"
-                    f"HR: {hr} "
-                    f"SpO2: {o2} "
-                    f"Network: {best} "
-                    f"Type: {msg['type']}"
-                    f"{'and ' + second if msg['type'] == 'w' and second else ''} "
-                    f"Success: {success}"
-                    f"_____________________________________________"
+                    f"\nHR: {hr} "
+                    f"\nSpO2: {o2} "
+                    f"\nNetwork: {best} "
+                    f"\nType: {msg['type']}"
+                    f"\n{'and ' + second if msg['type'] == 'w' and second else ''} "
+                    f"\nSuccess: {success}"
+                    f"\n_____________________________________________"
             )
             time.sleep(1)
 

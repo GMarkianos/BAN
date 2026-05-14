@@ -51,14 +51,14 @@ class NetworkSelector:
     # ------------------------------
     # RELIABILITY
     # ------------------------------
-    def update_stats(self, network, success, message_type):
+    def update_stats(self, network, success, msg):
         if success:
-            if(message_type == 'w'):
+            if(msg["type"] == 'w'):
                 self.stats_w[network]["success"] += 1
             else:
                 self.stats_m[network]["success"] += 1
         else:
-            if(message_type == 'w'):
+            if(msg["type"] == 'w'):
                 self.stats_w[network]["fail"] += 1
             else:
                 self.stats_m[network]["fail"] += 1
@@ -168,7 +168,7 @@ class NetworkSelector:
             return -1
 
         reliability = self.get_reliability(network, msg)
-        signal = self.get_signal_strength(network, msg)
+        signal = self.get_signal_strength(network)
 
         energy_raw = self.estimate_energy(network, payload, tx_time = self.estimate_tx_time(network, payload))
         energy = self.normalize_energy(energy_raw)

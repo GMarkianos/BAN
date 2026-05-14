@@ -100,15 +100,15 @@ if __name__ == "__main__":
                 success1 = transmitter.send(best,msg)
                 success2 = transmitter.send(second, msg) if second else False
 
-                selector.update_stats(best, success1, msg["type"])
+                selector.update_stats(best, success1, msg)
                 if second:
-                    selector.update_stats(second, success2, msg["type"])
+                    selector.update_stats(second, success2, msg)
 
                 success = success1 or success2 
                 
             else:
                 success = transmitter.send(best, msg)
-                selector.update_stats(best, success, msg["type"])
+                selector.update_stats(best, success, msg)
 
             if best:
                 print("Message type:", msg["type"])

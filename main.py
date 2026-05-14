@@ -112,14 +112,13 @@ if __name__ == "__main__":
 
             if not success:
                 queue.add(msg)
-            print(msg['type'])
             print(
                     f"_____________________________________________"
                     f"\nHR: {hr} "
                     f"\nSpO2: {o2} "
                     f"\nNetwork: {best} "
+                    f"{'and ' + second if msg['type'] == 'w' and second else ''} "
                     f"\nType: {msg['type']}"
-                    f"\n{'and ' + second if msg['type'] == 'w' and second else ''} "
                     f"\nSuccess: {success}"
                     f"\n_____________________________________________"
             )

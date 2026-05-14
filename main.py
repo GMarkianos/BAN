@@ -110,18 +110,18 @@ if __name__ == "__main__":
                 success = transmitter.send(best, msg)
                 selector.update_stats(best, success, msg)
 
-            if best:
-                print("Message type:", msg["type"])
-                print("Selected network:", best)
             if not success:
                 queue.add(msg)
             
             print(
+                    f"_____________________________________________"
                     f"HR: {hr} "
                     f"SpO2: {o2} "
                     f"Network: {best} "
-                    f"{'and ' + second if second else ''} "
+                    f"Type: {msg["type"]}"
+                    f"{'and ' + second if msd["type"] == 'w' and second else ''} "
                     f"Success: {success}"
+                    f"_____________________________________________"
             )
             time.sleep(1)
 

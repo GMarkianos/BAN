@@ -125,13 +125,25 @@ class NetworkSelector:
             return 0.5
 
     def ble_strength(self):
-        if not self.ble_agent.is_running():
-            return 0.0
-        rssi = self._get_ble_rssi()
-        if rssi is None:
+        try:
+            from Comms.bluetooth.bletools import BleTools
+            import dbus
+            bus = BleTools.get_bus()
+            remote_om = dbus.Interface(bus.get_object("org.bluez", "/"),
+                                    "org.freedesktop.DBus.ObjectManager")
+            objects = remote_om.GetManagedObjects()
+            
+            for path, props in objects.items():
+                if "org.bluez.Device1" in props:
+                    device = props["org.bluez.Device1"]
+                    if device.get("Connected") and "RSSI" in device:
+                        rssi = int(device["RSSI"])
+                        return max(0.0, min(1.0, (rssi + 90) / 40))
+            
+            return 0.5  # no client connected, honest fallback
+        except:
             return 0.5
-        return rssi
-
+        
     def lora_strength(self):
         return 0.7
 

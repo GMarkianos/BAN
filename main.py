@@ -115,12 +115,12 @@ if __name__ == "__main__":
                 queue.add(msg)
             print(
                     f"_____________________________________________"
-                    f"\nHR: {hr} "
-                    f"\nSpO2: {o2} "
-                    f"\nNetwork: {best if best else 'None available'} "
+                    f"\nHR:         {hr} "
+                    f"\nSpO2:       {o2} "
+                    f"\nNetwork:    {best if best else 'None available'} "
                     f"{'and ' + second if msg['type'] == 'w' and second is not None else ''} "
-                    f"\nType: {msg['type']}"
-                    f"\nSuccess: {success}"
+                    f"\nType:       {'Monitoring' if msg['type'] == 'm' else msg['type'] == 'w' 'Warning'}"
+                    f"\nSuccess:    {success}"
                     f"\n_____________________________________________"
             )
             time.sleep(3)

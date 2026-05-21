@@ -34,9 +34,9 @@ class NetworkSelector:
 
         # Static properties (for scoring)
         self.networks = {
-            "BLE": {"latency": 0.5, "range": 0.2},
-            "WIFI": {"latency": 1.0, "range": 0.5},
-            "LORA": {"latency": 0.3, "range": 1.0}
+            "BLE": {"latency": 0.9, "range": 0.2},
+            "WIFI": {"latency": 0.5, "range": 0.7},
+            "LORA": {"latency": 0.2, "range": 1.0}
         }
 
     # ------------------------------
@@ -110,13 +110,30 @@ class NetworkSelector:
     # SIGNAL STRENGTH
     # ------------------------------
     def wifi_strength(self):
-        return random.uniform(0.4, 0.9)
+        try:
+            output = subprocess.check_output(
+                ["iw", "dev", "wlan0", "link"],
+                stderr=subprocess.DEVNULL
+            ).decode()
+            
+            match = re.search(r"signal: (-\d+) dBm", output)
+            if match:
+                dbm = int(match.group(1))
+                return max(0.0, min(1.0, (dbm + 90) / 40))
+            return 0.5
+        except:
+            return 0.5
 
     def ble_strength(self):
-        return random.uniform(0.3, 0.7)
+        if not self.ble_agent.is_running():
+            return 0.0
+        rssi = self._get_ble_rssi()
+        if rssi is None:
+            return 0.5
+        return rssi
 
     def lora_strength(self):
-        return random.uniform(0.7, 1.0)
+        return 0.7
 
     def get_signal_strength(self, network):
         if network == "WIFI":
@@ -144,7 +161,7 @@ class NetworkSelector:
     def ble_available(self):
         
         try:
-            return self.ble_agent is not None
+            return self.ble_agent is not None and self.ble_agent.is_running()
         except:
             return False
 
@@ -172,19 +189,19 @@ class NetworkSelector:
         # Weights depending on message type
         if msg["type"] == "m":
             w = {
-                "reliability": 0.3,
-                "signal": 0.2,
-                "range": 0.2,
-                "energy": 0.3,
-                "latency": 0.1
+                "reliability": 0.15,
+                "signal":      0.1,
+                "range":       0.20,
+                "energy":      0.3,
+                "latency":     0.25
             }
         else:  # WARNING
             w = {
                 "reliability": 0.4,
-                "signal": 0.2,
-                "range": 0.2,
-                "energy": 0.1,
-                "latency": 0.3
+                "signal":      0.15,
+                "range":       0.25,
+                "energy":      0.1,
+                "latency":     0.1
             }
 
         score = (
@@ -192,7 +209,7 @@ class NetworkSelector:
             + w["signal"] * signal
             + w["range"] * range_
             + w["energy"] * energy
-            - w["latency"] * latency
+            + w["latency"] * latency
         )
 
         return score

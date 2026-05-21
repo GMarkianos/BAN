@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
                     selector.update_stats(best, success1,msg["type"])
                     if second:
-                        selector.update_stats(second, success2,msg)["type"]
+                        selector.update_stats(second, success2,msg["type"])
 
                     success = success1 or success2 
                 else:
@@ -96,6 +96,7 @@ if __name__ == "__main__":
                     selector.update_stats(best, success ,msg["type"])
 
             elif best:'''
+            success = False
             if msg["type"] == "w" and best:
                 success1 = transmitter.send(best,msg)
                 success2 = transmitter.send(second, msg) if second else False
@@ -106,23 +107,23 @@ if __name__ == "__main__":
 
                 success = success1 or success2 
                 
-            else:
+            elif best:
                 success = transmitter.send(best, msg)
                 selector.update_stats(best, success, msg)
 
-            if not success:
+            if not success or best is None:
                 queue.add(msg)
             print(
                     f"_____________________________________________"
                     f"\nHR: {hr} "
                     f"\nSpO2: {o2} "
-                    f"\nNetwork: {best} "
-                    f"{'and ' + second if msg['type'] == 'w' and second else ''} "
+                    f"\nNetwork: {best if best else 'None available'} "
+                    f"{'and ' + second if msg['type'] == 'w' and second is not None else ''} "
                     f"\nType: {msg['type']}"
                     f"\nSuccess: {success}"
                     f"\n_____________________________________________"
             )
-            time.sleep(1)
+            time.sleep(3)
 
     except KeyboardInterrupt:
         print("\nStopping health monitor...")
@@ -134,4 +135,6 @@ if __name__ == "__main__":
         # Stop both components
         sensor.stop()
         ble_agent.stop()
+        if lora_sender:
+            lora_sender.disconnect()
         print("\n✓ Program terminated cleanly")

@@ -119,7 +119,7 @@ if __name__ == "__main__":
                     f"\nSpO2:       {o2} "
                     f"\nNetwork:    {best if best else 'None available'} "
                     f"{'and ' + second if msg['type'] == 'w' and second is not None else ''} "
-                    f"\nType:       {'Monitoring' if msg['type'] == 'm' else msg['type'] == 'w' 'Warning'}"
+                    f"\nType:       {'Monitoring' if msg['type'] == 'm' else 'Warning'}"
                     f"\nSuccess:    {success}"
                     f"\n_____________________________________________"
             )

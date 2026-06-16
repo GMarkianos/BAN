@@ -11,7 +11,10 @@ class NetworkSelector:
         self.ble_agent = ble_agent
         self.wifi_enabled = wifi_enabled
         self.lora_sender = lora_sender
+        
         self.demo = None
+        self.counter = None
+        self.flag = None
 
         # Reliability tracking
         self.stats_w = {
@@ -188,14 +191,6 @@ class NetworkSelector:
 
     def ble_available(self):
         if self.demo:
-            if(self.demo["switch"] == True):
-                if(not counter):
-                    counter == 0
-                elif(counter >5):
-                    return False
-                else:
-                    counter = counter +1
-
             return self.demo["ble_available"]
         
         try:
@@ -273,9 +268,16 @@ class NetworkSelector:
     # SELECT BEST NETWORK
     # ------------------------------
     def choose_network(self, msg):
+        if(self.demo["switch"] == True):
+                if(not self.counter):
+                    self.counter = 0
+                elif(self.counter >5):
+                    self.flag = True
+                else:
+                    self.counter = counter +1
 
         availability = {
-            "BLE": self.ble_available(),
+            "BLE": (False if self.flag else self.ble_available()),
             "WIFI": self.wifi_available(),
             "LORA": self.lora_available()
         }

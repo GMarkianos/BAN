@@ -97,7 +97,6 @@ if __name__ == "__main__":
                     "heart_rate": demo["heart_rate"],
                     "spo2": demo["spo2"]
                 }
-
             else:
                 readings = sensor.get_readings()
 
@@ -125,6 +124,9 @@ if __name__ == "__main__":
                 success = transmitter.send(best, msg)
                 selector.update_stats(best, success, msg)
 
+            if (demo and demo["force_fail"] == True):
+                success = False
+
             if not success or best is None:
                 queue.add(msg)
 
@@ -135,9 +137,6 @@ if __name__ == "__main__":
                 battery_msg = f"\nLow battery percentage: {demo['battery']}%"
 
             queue_msg = ""
-            
-            if (demo and demo["force_fail"] == True):
-                success = False
 
             if not success:
                 queue_msg = "\nTransmission failed, storing message in queue."

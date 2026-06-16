@@ -123,6 +123,18 @@ if __name__ == "__main__":
 
             if not success or best is None:
                 queue.add(msg)
+
+
+            battery_msg = ""
+
+            if demo and demo["battery"] < 20:
+                battery_msg = f"\nLow battery percentage: {demo['battery']}%"
+
+            queue_msg = ""
+
+            if not success:
+                queue_msg = "\nTransmission failed, storing message in queue."
+
             print(
                     f"_____________________________________________"
                     f"\nHR:         {hr} "
@@ -131,8 +143,8 @@ if __name__ == "__main__":
                     f"{'and ' + second if msg['type'] == 'w' and second is not None else ''} "
                     f"\nType:       {'Monitoring' if msg['type'] == 'm' else 'Warning'}"
                     f"\nSuccess:    {success}"
-                    f"{'\nTransmission failed, storing message in queue.' if not success else ''}"
-                    f"{'\nLow battery percentage:' + demo['battery'] if demo and demo['battery'] < 20 else ''}"
+                    f"{queue_msg}"
+                    f"{battery_msg}"
                     f"\n_____________________________________________"
             )
             time.sleep(3)

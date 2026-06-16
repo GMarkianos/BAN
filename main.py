@@ -70,11 +70,15 @@ if __name__ == "__main__":
         lora_sender = None
 
     selector = NetworkSelector(ble_agent, True, lora_sender)
+
     if args.demo:
 
         with open(args.demo) as f:
 
             selector.demo = json.load(f)
+    else: 
+        demo = None
+        
     transmitter = Transmitter(ble_agent, lora_sender)
     queue = MessageQueue()
     

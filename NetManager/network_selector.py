@@ -13,8 +13,8 @@ class NetworkSelector:
         self.lora_sender = lora_sender
         
         self.demo = None
-        self.counter = None
-        self.flag = None
+        self.counter = 0
+        self.flag = False
 
         # Reliability tracking
         self.stats_w = {
@@ -231,19 +231,20 @@ class NetworkSelector:
         if msg["type"] == "m":
             if battery < 20:
 
-                return {
+                w = {
                     "reliability":0.10,
                     "signal":0.05,
                     "range":0.10,
                     "energy":0.60,
                     "latency":0.15
                 }
-            w = {
-                "reliability": 0.15,
-                "signal":      0.1,
-                "range":       0.20,
-                "energy":      0.3,
-                "latency":     0.25
+            else:
+                w = {
+                    "reliability": 0.15,
+                    "signal":      0.1,
+                    "range":       0.20,
+                    "energy":      0.3,
+                    "latency":     0.25
             }
         else:  # WARNING
             w = {
@@ -268,13 +269,12 @@ class NetworkSelector:
     # SELECT BEST NETWORK
     # ------------------------------
     def choose_network(self, msg):
-        if(self.demo["switch"] == True):
-                if(not self.counter):
-                    self.counter = 0
-                elif(self.counter >5):
-                    self.flag = True
-                else:
-                    self.counter = counter +1
+        if self.demo and self.demo.get("switch"):
+
+            self.counter += 1
+
+            if self.counter > 5:
+                self.flag = True
 
         availability = {
             "BLE": (False if self.flag else self.ble_available()),

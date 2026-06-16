@@ -191,8 +191,8 @@ class NetworkSelector:
             if(self.demo["switch"] == True):
                 if(not counter):
                     counter == 0
-            elif(counter >5):
-                return False
+                elif(counter >5):
+                    return False
             
             else:
                 counter = counter +1

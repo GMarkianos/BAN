@@ -193,9 +193,8 @@ class NetworkSelector:
                     counter == 0
                 elif(counter >5):
                     return False
-            
-            else:
-                counter = counter +1
+                else:
+                    counter = counter +1
 
             return self.demo["ble_available"]
         

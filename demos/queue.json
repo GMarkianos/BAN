@@ -3,12 +3,14 @@
   "spo2": 97,
 
   "wifi_available": true,
-  "ble_available": false,
-  "lora_available": false,
+  "ble_available": true,
+  "lora_available": true,
 
   "wifi_signal": 0.8,
   "ble_signal": 0.8,
   "lora_signal": 0.7,
 
-  "battery" : 100
+  "switch":false,
+  "battery" : 100,
+  "force_fail": true
 }

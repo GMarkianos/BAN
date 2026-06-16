@@ -188,6 +188,15 @@ class NetworkSelector:
 
     def ble_available(self):
         if self.demo:
+            if(self.demo["switch"] == True):
+                if(not counter):
+                    counter == 0
+            elif(counter >5):
+                return False
+            
+            else:
+                counter = counter +1
+
             return self.demo["ble_available"]
         
         try:
@@ -209,6 +218,12 @@ class NetworkSelector:
         if not available:
             return -1
 
+        if self.demo:
+            battery = self.demo["battery"]
+
+        else:
+            battery = 100
+    
         reliability = self.get_reliability(network, msg)
         signal = self.get_signal_strength(network)
 
@@ -220,6 +235,15 @@ class NetworkSelector:
 
         # Weights depending on message type
         if msg["type"] == "m":
+            if battery < 20:
+
+                return {
+                    "reliability":0.10,
+                    "signal":0.05,
+                    "range":0.10,
+                    "energy":0.60,
+                    "latency":0.15
+                }
             w = {
                 "reliability": 0.15,
                 "signal":      0.1,

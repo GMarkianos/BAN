@@ -26,9 +26,13 @@ class Transmitter:
                 self.lora.send_health_data(
                     heart_rate= msg["hr"],
                     spo2=msg["spo2"]
+                    
                 )
-
-            return True
+            
+            if (hasattr(self,"force_fail") and self.force_fail):
+                return False
+            
+            return False
 
         except Exception as e:
 

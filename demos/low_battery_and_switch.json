@@ -9,6 +9,8 @@
   "wifi_signal": 0.8,
   "ble_signal": 0.8,
   "lora_signal": 0.7,
-
-  "battery": 15
+  
+  "switch":true,
+  "battery": 15,
+  "force_fail": false
 }

@@ -95,7 +95,6 @@ if __name__ == "__main__":
                 }
 
             else:
-
                 readings = sensor.get_readings()
 
             hr = readings['heart_rate']
@@ -106,25 +105,7 @@ if __name__ == "__main__":
 
             success = False
             best, second = selector.choose_network(msg)
-            '''if not queue.empty():
-
-                msg = queue.get()
-
-                best, second = selector.choose_network(msg)
-                if msg["type"] == "w" and best:
-                    success1 = transmitter.send(best,msg)
-                    success2 = transmitter.send(second, msg) if second else False
-
-                    selector.update_stats(best, success1,msg["type"])
-                    if second:
-                        selector.update_stats(second, success2,msg["type"])
-
-                    success = success1 or success2 
-                else:
-                    success = transmitter.send(best, msg)
-                    selector.update_stats(best, success ,msg["type"])
-
-            elif best:'''
+            
             success = False
             if msg["type"] == "w" and best:
                 success1 = transmitter.send(best,msg)
@@ -150,6 +131,8 @@ if __name__ == "__main__":
                     f"{'and ' + second if msg['type'] == 'w' and second is not None else ''} "
                     f"\nType:       {'Monitoring' if msg['type'] == 'm' else 'Warning'}"
                     f"\nSuccess:    {success}"
+                    f"{'\nTransmission failed, storing message in queue.' if not success else ''}"
+                    f"{'\nLow battery percentage:' + {demo["battery"]} if demo and demo["battery"] < 20 else ''}"
                     f"\n_____________________________________________"
             )
             time.sleep(3)

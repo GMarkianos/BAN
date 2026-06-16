@@ -11,6 +11,7 @@ class NetworkSelector:
         self.ble_agent = ble_agent
         self.wifi_enabled = wifi_enabled
         self.lora_sender = lora_sender
+        self.demo = None
 
         # Reliability tracking
         self.stats_w = {
@@ -91,6 +92,12 @@ class NetworkSelector:
     # ------------------------------
     # ENERGY
     # ------------------------------
+    def get_bettery_level(self):
+        if self.demo:
+            return self.demo["battery"]
+        
+        return 100
+    
     def estimate_energy(self, network, payload_size, tx_time):
         model = self.consumptions[network]
 
@@ -148,6 +155,13 @@ class NetworkSelector:
         return 0.7
 
     def get_signal_strength(self, network):
+        if self.demo:
+
+            return {
+                "BLE": self.demo["ble_signal"],
+                "WIFI": self.demo["wifi_signal"],
+                "LORA": self.demo["lora_signal"]
+            }[network]
         if network == "WIFI":
             return self.wifi_strength()
         elif network == "BLE":
@@ -160,7 +174,9 @@ class NetworkSelector:
     # ------------------------------
 
     def wifi_available(self):
-
+        if self.demo:
+            return self.demo["wifi_available"]
+        
         if not self.wifi_enabled:
             return False
 
@@ -171,6 +187,8 @@ class NetworkSelector:
             return False
 
     def ble_available(self):
+        if self.demo:
+            return self.demo["ble_available"]
         
         try:
             return self.ble_agent is not None and self.ble_agent.is_running()
@@ -178,7 +196,9 @@ class NetworkSelector:
             return False
 
     def lora_available(self):
-        
+        if self.demo:
+            return self.demo["lora_available"]
+
         return self.lora_sender is not None
 
     # ------------------------------

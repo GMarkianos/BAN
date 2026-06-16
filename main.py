@@ -10,8 +10,20 @@ from Comms.lora.lora import LoRaHealthSender
 from NetManager.transmitter import Transmitter
 from NetManager.network_selector import NetworkSelector
 from NetManager.mqueue import MessageQueue
+import argparse
+import json
 # Global flag for clean shutdown
 running = True
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--demo",
+    type=str,
+    default=None
+)
+
+args = parser.parse_args()
 
 def signal_handler(sig, frame):
     """Handle shutdown signals gracefully"""
@@ -46,9 +58,9 @@ if __name__ == "__main__":
         #Initialize LoRa
         lora_sender = LoRaHealthSender(
             device_id="01",
-            m0_pin=25,      # Your GPIO 25
-            m1_pin=23,      # Your GPIO 23
-            aux_pin=24,     # Your GPIO 24
+            m0_pin=25,      #  GPIO 25
+            m1_pin=23,      #  GPIO 23
+            aux_pin=24,     #  GPIO 24
             port='/dev/serial0',
             baud=9600
         )
@@ -58,6 +70,11 @@ if __name__ == "__main__":
         lora_sender = None
 
     selector = NetworkSelector(ble_agent, True, lora_sender)
+    if args.demo:
+
+        with open(args.demo) as f:
+
+            selector.demo = json.load(f)
     transmitter = Transmitter(ble_agent, lora_sender)
     queue = MessageQueue()
     
@@ -67,7 +84,19 @@ if __name__ == "__main__":
     try:
 
         while running:
-            readings = sensor.get_readings()
+            if args.demo:
+
+                with open(args.demo) as f:
+                    demo = json.load(f)
+
+                readings = {
+                    "heart_rate": demo["heart_rate"],
+                    "spo2": demo["spo2"]
+                }
+
+            else:
+
+                readings = sensor.get_readings()
 
             hr = readings['heart_rate']
             o2 = readings['spo2']

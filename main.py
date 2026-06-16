@@ -78,7 +78,7 @@ if __name__ == "__main__":
             selector.demo = json.load(f)
     else: 
         demo = None
-        
+
     transmitter = Transmitter(ble_agent, lora_sender)
     queue = MessageQueue()
     
@@ -135,6 +135,9 @@ if __name__ == "__main__":
                 battery_msg = f"\nLow battery percentage: {demo['battery']}%"
 
             queue_msg = ""
+            
+            if (demo and demo["force_fail"] == True):
+                success = False
 
             if not success:
                 queue_msg = "\nTransmission failed, storing message in queue."

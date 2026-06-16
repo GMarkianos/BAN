@@ -29,9 +29,6 @@ class Transmitter:
                     
                 )
             
-            if (hasattr(self,"force_fail") and self.force_fail):
-                return False
-            
             return True
 
         except Exception as e:

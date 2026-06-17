@@ -121,8 +121,13 @@ if __name__ == "__main__":
                 success = success1 or success2 
                 
             elif best:
-                success = transmitter.send(best, msg)
-                selector.update_stats(best, success, msg)
+                if best == "BLE" and demo and demo["switch"] == True and selector.flag == True:
+                    success = False
+                    transmitter.send(best, msg)
+                    selector.update_stats(best, success, msg)
+                else:
+                    success = transmitter.send(best, msg)
+                    selector.update_stats(best, success, msg)
 
             if (demo and demo["force_fail"] == True):
                 success = False

@@ -275,9 +275,9 @@ class NetworkSelector:
 
             if self.counter > 5:
                 self.flag = True
-
+#"BLE": (False if self.flag else self.ble_available()),
         availability = {
-            "BLE": (False if self.flag else self.ble_available()),
+            "BLE":  self.ble_available(),
             "WIFI": self.wifi_available(),
             "LORA": self.lora_available()
         }

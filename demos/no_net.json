@@ -1,0 +1,16 @@
+{
+  "heart_rate": 78,
+  "spo2": 97,
+
+  "wifi_available": false,
+  "ble_available": false,
+  "lora_available": false,
+
+  "wifi_signal": 0.8,
+  "ble_signal": 0.8,
+  "lora_signal": 0.7,
+  
+  "switch":false,
+  "battery": 100,
+  "force_fail": false
+}

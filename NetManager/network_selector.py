@@ -18,15 +18,15 @@ class NetworkSelector:
 
         # Reliability tracking
         self.stats_w = {
-            "BLE": {"success": 0, "fail": 0},
-            "WIFI": {"success": 0, "fail": 0},
-            "LORA": {"success": 0, "fail": 0}
+            "BLE": {"success": 5, "fail": 5},
+            "WIFI": {"success": 5, "fail": 5},
+            "LORA": {"success": 5, "fail": 5}
         }
 
         self.stats_m = {
-            "BLE": {"success": 0, "fail": 0},
-            "WIFI": {"success": 0, "fail": 0},
-            "LORA": {"success": 0, "fail": 0}
+            "BLE": {"success": 5, "fail": 5},
+            "WIFI": {"success": 5, "fail": 5},
+            "LORA": {"success": 5, "fail": 5}
         }
 
         # Energy model
@@ -233,10 +233,10 @@ class NetworkSelector:
             if battery < 20:
 
                 w = {
-                    "reliability":0.10,
-                    "signal":0.05,
-                    "range":0.10,
-                    "energy":0.60,
+                    "reliability":0.2,
+                    "signal":0.1,
+                    "range":0.15,
+                    "energy":0.4,
                     "latency":0.15
                 }
             else:
